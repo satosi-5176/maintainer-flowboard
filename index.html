@@ -73,17 +73,34 @@
     <p class="footer">Less triage fatigue. More maintainer clarity.</p>
   </main>
 
-<script id="sample-issues" type="application/json">__SAMPLE_ISSUES__</script>
-<script id="sample-prs" type="application/json">__SAMPLE_PRS__</script>
+<script id="sample-issues" type="application/json">[
+  {"number":101,"title":"Crash when opening settings on Windows","body":"The app crashes when I click Settings. It shows an error but I don't know why.","labels":["bug"],"author":"user-alpha","updatedAt":"2026-05-10T09:20:00Z","comments":[]},
+  {"number":102,"title":"Docs: installation section still mentions old package name","body":"The README still says to install old-package-name.","labels":["documentation"],"author":"docs-helper","updatedAt":"2026-05-28T12:00:00Z","comments":[]},
+  {"number":103,"title":"Feature request: add dark mode","body":"It would be nice to have a dark mode option.","labels":["enhancement"],"author":"user-beta","updatedAt":"2026-05-25T11:11:00Z","comments":[]},
+  {"number":104,"title":"Bug: export is broken","body":"Steps to reproduce:\n1. Open project\n2. Click export\nExpected: file downloads\nActual: nothing happens","labels":["bug"],"author":"tester-one","updatedAt":"2026-05-29T16:30:00Z","comments":[]},
+  {"number":105,"title":"Question: is Node 18 still supported?","body":"I could not find this in the docs.","labels":["question"],"author":"new-user","updatedAt":"2026-05-23T08:45:00Z","comments":[]},
+  {"number":106,"title":"Broken on Linux with error EACCES","body":"It fails with EACCES on Ubuntu 24.04.","labels":["bug"],"author":"linux-user","updatedAt":"2026-04-01T07:10:00Z","comments":["Maintainer: Could you provide reproduction steps?","waiting for author"]},
+  {"number":107,"title":"Release notes for v2.0","body":"Tracking breaking changes and migration notes.","labels":["release","breaking"],"author":"maintainer","updatedAt":"2026-05-27T18:00:00Z","comments":[]},
+  {"number":108,"title":"Duplicate? Same as issue #101","body":"I see the same settings crash.","labels":["bug","duplicate?"],"author":"user-gamma","updatedAt":"2026-05-11T10:00:00Z","comments":[]},
+  {"number":109,"title":"Add example for custom config","body":"A small example in the docs would help.","labels":["docs","good first issue"],"author":"contrib-new","updatedAt":"2026-05-22T14:20:00Z","comments":[]},
+  {"number":110,"title":"Error after upgrade","body":"After upgrading, everything is broken.","labels":["bug"],"author":"frustrated-user","updatedAt":"2026-05-30T09:30:00Z","comments":[]}
+]</script>
+<script id="sample-prs" type="application/json">[
+  {"number":201,"title":"Fix export button handler","body":"Adds a missing event listener and updates one test.","labels":["bugfix"],"author":"contrib-alpha","updatedAt":"2026-05-30T08:15:00Z","draft":false,"files":["src/export.js","test/export.test.js"],"comments":[]},
+  {"number":202,"title":"Docs: update installation package name","body":"README only.","labels":["documentation"],"author":"docs-helper","updatedAt":"2026-05-29T12:00:00Z","draft":false,"files":["README.md"],"comments":[]},
+  {"number":203,"title":"Draft: refactor all config loading","body":"Large refactor. Not ready yet.","labels":["refactor"],"author":"contrib-beta","updatedAt":"2026-05-20T10:00:00Z","draft":true,"files":["src/config.js","src/main.js","src/cli.js"],"comments":[]},
+  {"number":204,"title":"Add changelog entry for v2.0 breaking changes","body":"Adds release notes.","labels":["changelog","release"],"author":"maintainer","updatedAt":"2026-05-26T17:30:00Z","draft":false,"files":["CHANGELOG.md"],"comments":[]},
+  {"number":205,"title":"Add dark mode","body":"Implements dark mode with CSS variables.","labels":["enhancement"],"author":"contrib-gamma","updatedAt":"2026-03-25T09:00:00Z","draft":false,"files":["src/theme.js","style.css"],"comments":["Maintainer: Could you reduce the scope?","needs response"]},
+  {"number":206,"title":"Test: add reproduction for Linux EACCES","body":"Adds a failing test showing the EACCES issue.","labels":["test","bug"],"author":"linux-user","updatedAt":"2026-05-30T11:45:00Z","draft":false,"files":["test/linux-permission.test.js"],"comments":[]}
+]</script>
 <script>
-const COLUMNS=__COLUMNS__;
+const COLUMNS=["Unclassified","Needs Info","Needs Reproduction","Waiting for Maintainer Review","Waiting for Author Response","Docs Candidate","Stale Candidate","Release Notes Candidate"];
 const STORE_KEY="maintainer-flowboard-v0.1";
 let state={repoName:"",maintainerNote:"",items:[]};
 const $=id=>document.getElementById(id);
 const low=v=>String(v||"").toLowerCase();
 const labelsOf=l=>Array.isArray(l)?l.map(x=>typeof x==="string"?x:x.name).filter(Boolean):[];
 const daysOld=iso=>Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/86400000);
-
 function inferType(raw){if(raw.type)return String(raw.type).toLowerCase().includes("pr")?"pr":"issue";return raw.draft!==undefined||raw.files?"pr":"issue";}
 function classify(raw){
   const type=inferType(raw), title=low(raw.title), body=low(raw.body), labels=labelsOf(raw.labels), labelText=labels.join(" ").toLowerCase(), comments=Array.isArray(raw.comments)?raw.comments.join(" ").toLowerCase():"";
@@ -98,41 +115,14 @@ function classify(raw){
   if(bug&&hasSteps)return["Needs Info","Bug-like report has some details but may still need triage.","Confirm environment and whether the reproduction is minimal."];
   return["Unclassified","No strong rule matched.","Read manually and assign the next action."];
 }
-function normalize(raw){
-  const [column,reason,nextAction]=classify(raw), type=inferType(raw), number=raw.number||Math.random().toString(36).slice(2);
-  return{ id:`${type}-${number}`, number, title:raw.title||"(untitled)", body:raw.body||"", type, labels:labelsOf(raw.labels), author:raw.author||raw.user?.login||"unknown", updatedAt:raw.updatedAt||raw.updated_at||new Date().toISOString(), column, reason, nextAction, note:raw.note||""};
-}
+function normalize(raw){const [column,reason,nextAction]=classify(raw), type=inferType(raw), number=raw.number||Math.random().toString(36).slice(2);return{ id:`${type}-${number}`, number, title:raw.title||"(untitled)", body:raw.body||"", type, labels:labelsOf(raw.labels), author:raw.author||raw.user?.login||"unknown", updatedAt:raw.updatedAt||raw.updated_at||new Date().toISOString(), column, reason, nextAction, note:raw.note||""};}
 function save(){state.repoName=$("repoName").value;state.maintainerNote=$("maintainerNote").value;localStorage.setItem(STORE_KEY,JSON.stringify(state));}
 function load(){try{const s=localStorage.getItem(STORE_KEY);if(s){state=JSON.parse(s);$("repoName").value=state.repoName||"";$("maintainerNote").value=state.maintainerNote||"";}}catch(e){console.warn(e)}}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
-function render(){
-  const board=$("board");board.innerHTML="";
-  for(const colName of COLUMNS){
-    const items=state.items.filter(i=>i.column===colName);
-    const col=document.createElement("section");col.className="column";col.innerHTML=`<div class="column-head"><h3>${esc(colName)}</h3><span class="count">${items.length}</span></div>`;
-    for(const item of items)col.appendChild(card(item));
-    board.appendChild(col);
-  }
-  $("statTotal").textContent=state.items.length;$("statIssues").textContent=state.items.filter(i=>i.type==="issue").length;$("statPRs").textContent=state.items.filter(i=>i.type==="pr").length;$("statWarnings").textContent=state.items.filter(i=>i.column!=="Unclassified").length;save();
-}
-function card(item){
-  const el=document.createElement("article");el.className="item";
-  const tags=item.labels.map(l=>`<span class="tag">${esc(l)}</span>`).join("")||'<span class="tag">no labels</span>';
-  const opts=COLUMNS.map(c=>`<option value="${esc(c)}" ${c===item.column?"selected":""}>${esc(c)}</option>`).join("");
-  el.innerHTML=`<div class="item-top"><h4 class="item-title">#${esc(item.number)} ${esc(item.title)}</h4><span class="badge ${item.type==="pr"?"pr":"issue"}">${item.type==="pr"?"PR":"Issue"}</span></div><div class="labels">${tags}</div><div class="meta">By ${esc(item.author)} · updated ${esc((new Date(item.updatedAt)).toISOString().slice(0,10))}</div><div class="reason"><b>Reason:</b> ${esc(item.reason)}</div><div class="next"><b>Suggested next action:</b> ${esc(item.nextAction)}</div><select class="mini-select">${opts}</select><textarea class="note" placeholder="Maintainer note...">${esc(item.note)}</textarea>`;
-  el.querySelector("select").onchange=e=>{state.items.find(x=>x.id===item.id).column=e.target.value;render();};
-  el.querySelector("textarea").oninput=e=>{state.items.find(x=>x.id===item.id).note=e.target.value;save();};
-  return el;
-}
+function render(){const board=$("board");board.innerHTML="";for(const colName of COLUMNS){const items=state.items.filter(i=>i.column===colName);const col=document.createElement("section");col.className="column";col.innerHTML=`<div class="column-head"><h3>${esc(colName)}</h3><span class="count">${items.length}</span></div>`;for(const item of items)col.appendChild(card(item));board.appendChild(col);}$("statTotal").textContent=state.items.length;$("statIssues").textContent=state.items.filter(i=>i.type==="issue").length;$("statPRs").textContent=state.items.filter(i=>i.type==="pr").length;$("statWarnings").textContent=state.items.filter(i=>i.column!=="Unclassified").length;save();}
+function card(item){const el=document.createElement("article");el.className="item";const tags=item.labels.map(l=>`<span class="tag">${esc(l)}</span>`).join("")||'<span class="tag">no labels</span>';const opts=COLUMNS.map(c=>`<option value="${esc(c)}" ${c===item.column?"selected":""}>${esc(c)}</option>`).join("");let date="unknown";try{date=new Date(item.updatedAt).toISOString().slice(0,10)}catch(e){}el.innerHTML=`<div class="item-top"><h4 class="item-title">#${esc(item.number)} ${esc(item.title)}</h4><span class="badge ${item.type==="pr"?"pr":"issue"}">${item.type==="pr"?"PR":"Issue"}</span></div><div class="labels">${tags}</div><div class="meta">By ${esc(item.author)} · updated ${esc(date)}</div><div class="reason"><b>Reason:</b> ${esc(item.reason)}</div><div class="next"><b>Suggested next action:</b> ${esc(item.nextAction)}</div><select class="mini-select">${opts}</select><textarea class="note" placeholder="Maintainer note...">${esc(item.note)}</textarea>`;el.querySelector("select").onchange=e=>{state.items.find(x=>x.id===item.id).column=e.target.value;render();};el.querySelector("textarea").oninput=e=>{state.items.find(x=>x.id===item.id).note=e.target.value;save();};return el;}
 function importArray(arr){if(!Array.isArray(arr))throw new Error("Input must be a JSON array.");for(const item of arr.map(normalize)){const idx=state.items.findIndex(x=>x.id===item.id);if(idx>=0)state.items[idx]={...state.items[idx],...item,note:state.items[idx].note||item.note};else state.items.push(item);}render();}
-function generateSummary(){
-  const lines=["# Weekly Maintainer Flowboard Summary","",`Repository: ${$("repoName").value||"(not specified)"}`,`Generated: ${new Date().toISOString().slice(0,10)}`,""];
-  const note=$("maintainerNote").value.trim();if(note)lines.push(`Maintainer note: ${note}`,"");
-  lines.push("## Snapshot","",`- Total items: ${state.items.length}`,`- Issues: ${state.items.filter(i=>i.type==="issue").length}`,`- Pull requests: ${state.items.filter(i=>i.type==="pr").length}`,"");
-  for(const c of COLUMNS){const items=state.items.filter(i=>i.column===c);lines.push(`## ${c} (${items.length})`,"");if(!items.length)lines.push("- None");else for(const i of items){lines.push(`- ${i.type==="pr"?"PR":"Issue"} #${i.number}: ${i.title}`);lines.push(`  - Reason: ${i.reason}`);lines.push(`  - Suggested next action: ${i.nextAction}`);if(i.note)lines.push(`  - Maintainer note: ${i.note}`);}lines.push("");}
-  lines.push("---","Maintainer Flowboard does not make decisions. It organizes information before maintainer judgment.");
-  $("summaryOutput").value=lines.join("\n");
-}
+function generateSummary(){const lines=["# Weekly Maintainer Flowboard Summary","",`Repository: ${$("repoName").value||"(not specified)"}`,`Generated: ${new Date().toISOString().slice(0,10)}`,""];const note=$("maintainerNote").value.trim();if(note)lines.push(`Maintainer note: ${note}`,"");lines.push("## Snapshot","",`- Total items: ${state.items.length}`,`- Issues: ${state.items.filter(i=>i.type==="issue").length}`,`- Pull requests: ${state.items.filter(i=>i.type==="pr").length}`,"");for(const c of COLUMNS){const items=state.items.filter(i=>i.column===c);lines.push(`## ${c} (${items.length})`,"");if(!items.length)lines.push("- None");else for(const i of items){lines.push(`- ${i.type==="pr"?"PR":"Issue"} #${i.number}: ${i.title}`);lines.push(`  - Reason: ${i.reason}`);lines.push(`  - Suggested next action: ${i.nextAction}`);if(i.note)lines.push(`  - Maintainer note: ${i.note}`);}lines.push("");}lines.push("---","Maintainer Flowboard does not make decisions. It organizes information before maintainer judgment.");$("summaryOutput").value=lines.join("\n");}
 function download(name,text,type){const blob=new Blob([text],{type});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
 $("loadSample").onclick=()=>{state.items=[];importArray(JSON.parse($("sample-issues").textContent));importArray(JSON.parse($("sample-prs").textContent));};
 $("importText").onclick=()=>{try{importArray(JSON.parse($("jsonInput").value));$("jsonInput").value="";}catch(e){alert(e.message)}};
