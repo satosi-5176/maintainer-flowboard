@@ -1,0 +1,118 @@
+[
+  {
+    "number": 101,
+    "title": "Crash when opening settings on Windows",
+    "body": "The app crashes when I click Settings. It shows an error but I don't know why.",
+    "labels": [
+      "bug"
+    ],
+    "author": "user-alpha",
+    "updatedAt": "2026-05-10T09:20:00Z",
+    "comments": []
+  },
+  {
+    "number": 102,
+    "title": "Docs: installation section still mentions old package name",
+    "body": "The README still says to install old-package-name.",
+    "labels": [
+      "documentation"
+    ],
+    "author": "docs-helper",
+    "updatedAt": "2026-05-28T12:00:00Z",
+    "comments": []
+  },
+  {
+    "number": 103,
+    "title": "Feature request: add dark mode",
+    "body": "It would be nice to have a dark mode option.",
+    "labels": [
+      "enhancement"
+    ],
+    "author": "user-beta",
+    "updatedAt": "2026-05-25T11:11:00Z",
+    "comments": []
+  },
+  {
+    "number": 104,
+    "title": "Bug: export is broken",
+    "body": "Steps to reproduce:\\n1. Open project\\n2. Click export\\nExpected: file downloads\\nActual: nothing happens",
+    "labels": [
+      "bug"
+    ],
+    "author": "tester-one",
+    "updatedAt": "2026-05-29T16:30:00Z",
+    "comments": []
+  },
+  {
+    "number": 105,
+    "title": "Question: is Node 18 still supported?",
+    "body": "I could not find this in the docs.",
+    "labels": [
+      "question"
+    ],
+    "author": "new-user",
+    "updatedAt": "2026-05-23T08:45:00Z",
+    "comments": []
+  },
+  {
+    "number": 106,
+    "title": "Broken on Linux with error EACCES",
+    "body": "It fails with EACCES on Ubuntu 24.04.",
+    "labels": [
+      "bug"
+    ],
+    "author": "linux-user",
+    "updatedAt": "2026-04-01T07:10:00Z",
+    "comments": [
+      "Maintainer: Could you provide reproduction steps?",
+      "waiting for author"
+    ]
+  },
+  {
+    "number": 107,
+    "title": "Release notes for v2.0",
+    "body": "Tracking breaking changes and migration notes.",
+    "labels": [
+      "release",
+      "breaking"
+    ],
+    "author": "maintainer",
+    "updatedAt": "2026-05-27T18:00:00Z",
+    "comments": []
+  },
+  {
+    "number": 108,
+    "title": "Duplicate? Same as issue #101",
+    "body": "I see the same settings crash.",
+    "labels": [
+      "bug",
+      "duplicate?"
+    ],
+    "author": "user-gamma",
+    "updatedAt": "2026-05-11T10:00:00Z",
+    "comments": []
+  },
+  {
+    "number": 109,
+    "title": "Add example for custom config",
+    "body": "A small example in the docs would help.",
+    "labels": [
+      "docs",
+      "good first issue"
+    ],
+    "author": "contrib-new",
+    "updatedAt": "2026-05-22T14:20:00Z",
+    "comments": []
+  },
+  {
+    "number": 110,
+    "title": "Error after upgrade",
+    "body": "After upgrading, everything is broken.",
+    "labels": [
+      "bug"
+    ],
+    "author": "frustrated-user",
+    "updatedAt": "2026-05-30T09:30:00Z",
+    "comments": []
+  }
+]
