@@ -17,11 +17,21 @@ The main goal is to greatly reduce and streamline OSS maintainer work.
 
 Every feature, document, workflow, and technical decision should be judged by whether it helps that goal.
 
-## Operating premise: maintainers use AI
+## Baseline premise: all maintainers must benefit
 
-Maintainer Flowboard should be developed under the assumption that modern OSS maintainers use AI assistance as part of their maintenance workflow.
+Maintainer Flowboard must help OSS maintainers whether or not they already use AI.
 
-The project should not assume that maintainers are doing every task manually, nor should it compete with AI coding agents by becoming another agent that makes decisions.
+The project should not become useful only for AI-heavy workflows. A maintainer who does not use AI should still be able to feel that the tool reduces reading, sorting, remembering, prioritizing, documenting, and release-preparation work.
+
+This is the baseline requirement.
+
+If the tool only helps when paired with another AI assistant, it is not strong enough. AI-assisted value is an additional requirement, not a substitute for basic maintainer usefulness.
+
+## Operating premise: many maintainers use AI
+
+Maintainer Flowboard should also be developed under the assumption that modern OSS maintainers may use AI assistance as part of their maintenance workflow.
+
+The project should not assume that every maintainer is doing every task manually, nor should it compete with AI coding agents by becoming another agent that makes decisions.
 
 Instead, Maintainer Flowboard should help maintainers use AI more safely, clearly, and efficiently.
 
@@ -36,9 +46,9 @@ This means the project should focus on work such as:
 
 This premise changes the benchmark.
 
-Maintainer Flowboard is not competing against a maintainer with no tools. It is competing against a maintainer who already has access to AI.
+Maintainer Flowboard must be useful to maintainers who do not use AI, and it must still provide additional structure, memory, workflow clarity, and review support for maintainers who do use AI.
 
-To score highly, the project must provide structure, memory, workflow clarity, and review support that a generic AI chat or coding agent does not reliably provide by itself.
+To score highly, the project must provide value that neither manual work nor a generic AI chat or coding agent reliably provides by itself.
 
 ## Development posture: route changes are allowed
 
@@ -70,7 +80,7 @@ AI assistance should be used as an objective review partner. Its role is not onl
 
 - Does this actually reduce OSS maintainer work?
 - Does this make a maintainer's judgment, triage, review, documentation, release, or handoff work easier?
-- Would a maintainer clearly feel the difference compared with doing the work manually?
+- Would a non-AI maintainer clearly feel the difference compared with doing the work manually?
 - Would it still help if the maintainer already uses AI tools?
 - Does it give AI-assisted maintainers better context, structure, or continuity than a generic AI chat alone?
 - Is this adding another tool-shaped burden instead of removing work?
@@ -82,7 +92,7 @@ AI review must be willing to give low scores. It should not inflate the project 
 
 The S evaluation is not a general quality score.
 
-It measures how strongly Maintainer Flowboard reduces OSS maintainer workload and creates results that would be difficult or impossible to reproduce manually, even for maintainers who already use AI assistance.
+It measures how strongly Maintainer Flowboard reduces OSS maintainer workload and creates results that would be difficult or impossible to reproduce manually, while also providing additional value for maintainers who already use AI assistance.
 
 ### S0
 
@@ -101,6 +111,8 @@ Using it can lighten maintainer work in some cases. However, for some maintainer
 It is not perfect, but it can lighten many maintainer tasks.
 
 The efficiency or result produced by the tool is clearly difficult to recover manually. A maintainer should be able to feel that the tool provides an advantage that is not practical to reproduce by hand.
+
+For maintainers who do not use AI, S3 requires obvious practical workload reduction.
 
 For AI-assisted maintainers, S3 also requires the tool to provide practical structure or continuity that a normal AI chat or coding-agent session would not reliably preserve by itself.
 
@@ -136,13 +148,16 @@ For release purposes, S3 means more than "the app works" or "the feature is usef
 
 S3 requires that maintainers can clearly feel a level of efficiency or output quality that they could not realistically achieve without the tool.
 
-Because the project assumes maintainers already use AI, S3 also requires a clear advantage over using a generic AI assistant alone.
+This applies first to maintainers doing the work without AI. The tool must be valuable on its own.
+
+Because many maintainers also use AI, S3 additionally requires a clear advantage over using a generic AI assistant alone.
 
 A release candidate should therefore answer yes to all of the following:
 
 - Does the tool reduce multiple maintainer tasks, not just one small convenience?
 - Is the saved work obvious to someone reviewing the workflow?
 - Would recreating the same organization, prioritization, summary, release-candidate extraction, or handoff manually be very difficult?
+- Would a maintainer who does not use AI still gain practical efficiency from this tool?
 - Would a maintainer who already uses AI still gain clarity, continuity, or workflow structure from this tool?
 - Does the tool avoid creating extra review burden that cancels out its benefit?
 - Does the tool preserve maintainer judgment instead of replacing it?
@@ -157,7 +172,7 @@ The review should distinguish:
 
 - implementation progress,
 - documentation progress,
-- maintainer-workload reduction,
+- maintainer-workload reduction for non-AI workflows,
 - usefulness for AI-assisted maintainers,
 - evidence of practical usefulness,
 - remaining friction,
@@ -173,10 +188,11 @@ Before opening or merging a PR, ask:
 2. Who would feel the benefit?
 3. Is the benefit larger than the new complexity?
 4. Does this preserve human maintainer judgment?
-5. Does this help a maintainer who already uses AI?
-6. Does it provide structure, continuity, or workflow memory beyond a generic AI chat?
-7. Does this move the project toward S3?
-8. If this route fails, what useful learning or component should be carried forward?
+5. Does this help a maintainer who does not use AI?
+6. Does this help a maintainer who already uses AI?
+7. Does it provide structure, continuity, or workflow memory beyond a generic AI chat?
+8. Does this move the project toward S3?
+9. If this route fails, what useful learning or component should be carried forward?
 
 ## Do not confuse activity with progress
 
