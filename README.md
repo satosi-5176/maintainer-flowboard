@@ -71,6 +71,7 @@ There is no login, server, database, tracking, or external API in v0.1.
 
 ## Documentation
 
+- [Project handoff](HANDOFF.md)
 - [Project philosophy](PROJECT_PHILOSOPHY.md)
 - [Spec](SPEC.md)
 - [Workflow](docs/workflow.md)
