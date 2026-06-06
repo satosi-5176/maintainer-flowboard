@@ -3,106 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Maintainer Flowboard — Public Repository Selector</title>
+  <meta http-equiv="refresh" content="0; url=./index.html">
+  <title>Maintainer Flowboard — Repository Selector</title>
   <style>
     :root{--bg:#f6f8fb;--card:#fff;--ink:#102033;--muted:#64748b;--line:rgba(16,32,51,.12);--blue:#2563eb;--blueSoft:#dbeafe;--shadow:0 10px 30px rgba(15,23,42,.08)}
-    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:980px;margin:0 auto;padding:20px;display:grid;gap:16px}.card{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;display:grid;gap:12px}.eyebrow{display:inline-flex;width:max-content;padding:7px 10px;border-radius:999px;background:var(--blueSoft);color:#1e3a8a;font-size:13px;font-weight:850}h1{margin:0;font-size:clamp(32px,5vw,52px);line-height:1.03;letter-spacing:-.04em}p{margin:0;color:var(--muted);line-height:1.55}label{font-weight:850;font-size:13px;color:var(--muted)}input,select{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff;color:var(--ink);font:inherit}.row{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:10px}.btn{min-height:42px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:0 14px;font-weight:850;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:inherit;text-decoration:none}.primary{background:var(--blue);color:white;border-color:transparent}.status{padding:12px;border:1px solid var(--line);border-radius:12px;background:#f8fafc;white-space:pre-wrap;color:var(--muted)}.danger{color:#991b1b}.ok{color:#166534}.repo-tools{display:none}.repo-list{display:grid;gap:10px}.tools-grid{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:10px}.recent-section{display:none}.recent-section.is-open{display:grid}.section-title{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.recent-list{display:grid;gap:10px}.recent-repo{border:1px solid var(--line);border-radius:14px;background:#fff;padding:12px;display:grid;gap:8px}.recent-repo h3{margin:0;font-size:15px}.subtle{color:var(--muted);font-size:13px}.repo{border:1px solid var(--line);border-radius:14px;background:#fff;padding:12px;display:grid;gap:8px}.repo h3{margin:0;font-size:16px}.repo[aria-selected="true"]{outline:3px solid rgba(37,99,235,.28);border-color:rgba(37,99,235,.45)}.meta{font-size:13px;color:var(--muted)}.details{display:none;border-top:1px solid var(--line);padding-top:8px}.details.is-open{display:grid;gap:5px}.selected-actions{display:none;border-top:1px solid var(--line);padding-top:10px}.selected-actions.is-open{display:grid;gap:8px}.actions{display:flex;flex-wrap:wrap;gap:10px}.aux-actions{gap:6px}.btn.minor{min-height:auto;border:0;background:transparent;padding:0;color:var(--blue);font-size:13px}.small{font-size:13px}@media(max-width:720px){.app{padding:14px}.row,.tools-grid{grid-template-columns:1fr}.actions{display:grid}.btn{width:100%}.btn.minor{width:auto;justify-content:flex-start}}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:grid;place-items:center;padding:20px}.card{width:min(100%,680px);background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:22px;display:grid;gap:12px}.eyebrow{display:inline-flex;width:max-content;padding:7px 10px;border-radius:999px;background:var(--blueSoft);color:#1e3a8a;font-size:13px;font-weight:850}h1{margin:0;font-size:clamp(30px,5vw,46px);line-height:1.04;letter-spacing:-.04em}p{margin:0;color:var(--muted);line-height:1.55}.btn{min-height:42px;border:1px solid transparent;border-radius:12px;background:var(--blue);color:white;padding:0 14px;font-weight:850;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;width:max-content}
   </style>
 </head>
 <body>
-  <main class="app">
-    <section class="card">
-      <div class="eyebrow">Public repository selector</div>
-      <h1>Choose a public repository</h1>
-      <p>Enter a GitHub user or organization, find public repositories, then choose one. Details are optional; you can go straight to the board or open the repository on GitHub.</p>
-    </section>
-
-    <section class="card">
-      <label for="ownerInput">GitHub user or organization</label>
-      <div class="row">
-        <input id="ownerInput" placeholder="satosi-5176" autocomplete="off" list="ownerHistoryList">
-        <datalist id="ownerHistoryList"></datalist>
-        <button class="btn primary" id="fetchButton" type="button">Find repos</button>
-      </div>
-      <div id="status" class="status">Enter a public GitHub user or organization, then fetch repositories.</div>
-    </section>
-
-    <section class="card recent-section" id="recentSection">
-      <div class="section-title">
-        <div>
-          <label>Recent repositories</label>
-          <p class="subtle">Repositories opened from this browser.</p>
-        </div>
-      </div>
-      <div id="recentRepoList" class="recent-list"></div>
-    </section>
-
-    <section class="card repo-tools" id="repoTools">
-      <div class="tools-grid">
-        <div>
-          <label for="repoSearchInput">Search repositories</label>
-          <input id="repoSearchInput" placeholder="Filter by name or description" autocomplete="off">
-        </div>
-        <div>
-          <label for="repoSortSelect">Sort repositories</label>
-          <select id="repoSortSelect">
-            <option value="updated">Recently updated</option>
-            <option value="name">Name</option>
-            <option value="stars">Stars</option>
-            <option value="issues">Open issues</option>
-            <option value="recently-opened">Recently opened</option>
-            <option value="frequently-opened">Frequently opened</option>
-          </select>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <div id="repoList" class="repo-list"></div>
-    </section>
+  <main class="card">
+    <div class="eyebrow">Compatibility path</div>
+    <h1>Maintainer Flowboard moved home</h1>
+    <p>The public repository selector is now the Maintainer Flowboard home page. You should be redirected automatically.</p>
+    <a class="btn" href="./index.html">Open Maintainer Flowboard</a>
   </main>
-<script>
-const STORE_KEY="maintainer-flowboard-v0.1";
-const OWNER_HISTORY_KEY="maintainer-flowboard-owner-history";
-const REPO_HISTORY_KEY="maintainer-flowboard-repo-history";
-let repos=[],selectedRepo=null,openDetails=new Set();
-const $=id=>document.getElementById(id);
-function setStatus(message,kind){const target=$("status");target.textContent=message;target.className="status"+(kind?` ${kind}`:"")}
-function esc(value){return String(value??"").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[character]))}
-function labelsOf(labels){return Array.isArray(labels)?labels.map(label=>typeof label==="string"?label:label?.name).filter(Boolean):[]}
-function daysOld(iso){return Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/86400000)}
-function classifyItem(item){const text=[item.title,item.body,(item.labels||[]).join(" ")].join(" ").toLowerCase(),stale=daysOld(item.updatedAt)>=30,validationTask=item.type==="issue"&&/\b(validate|validation|qa|smoke test|manual test|real oss repository|test plan)\b/.test(text),bug=item.type==="issue"&&/\b(bug|crash|error|broken|fail(?:s|ed|ing)?|exception|regression|unstable|incorrect|wrong|hangs?)\b/.test(text),hasRepro=/\b(playground|input|output|expected|reproduce|reproduction|steps)\b|expected output/.test(text),missingRepro=/\b(cannot reproduce|can't reproduce|cant reproduce|could not reproduce|no minimal reproduction|no reproduction|no repro|no reduced test case|no test case|no reliable steps|do not have reliable steps|don't have reliable steps|without (?:a )?(?:minimal |reduced )?(?:reproduction|repro|test case))\b/i.test(text),docs=/\b(docs?|documentation|readme|troubleshooting|guide|question|supported)\b/.test(text),dependency=/\b(dependencies?|renovate|dependabot|dependency dashboard|bot)\b/.test(text),release=/\b(release|tracking|changelog|migration|breaking|deprecation|deprecated)\b/.test(text),feature=/\b(feature request|enhancement|proposal|request)\b/.test(text),waiting=/\b(waiting for author|needs response|author response|please provide)\b/.test(text)||item.draft;if(waiting)return{...item,column:"Waiting for Author Response",reason:item.draft?"Pull request appears to be draft or not ready for review.":"Thread appears to be waiting for the author.",nextAction:"Inspect whether the missing author response is still needed before any follow-up."};if(dependency)return{...item,column:"Dependency / Bot Maintenance",reason:"Dependency or bot-maintained tracking item detected.",nextAction:"Inspect dependency update status and project bot policy."};if(release)return{...item,column:"Tracking / Release Follow-up",reason:"Tracking or release follow-up item detected.",nextAction:"Inspect release state, linked PRs, and remaining follow-up notes."};if(feature)return{...item,column:"Feature / Request",reason:"Feature or request-like item detected.",nextAction:"Inspect whether this request fits project scope and maintenance cost."};if(validationTask)return{...item,column:"Ready for Maintainer Review",reason:"Validation or QA task detected.",nextAction:"Inspect validation scope, target repository, expected evidence, and recorded results."};if(item.type==="issue"&&bug&&missingRepro)return{...item,column:"Needs Reproduction",reason:"Bug-like report says reproduction is missing or unreliable.",nextAction:stale?"Inspect missing reproduction details and also check whether the age/relevance still justifies follow-up.":"Inspect what reproduction, environment, expected behavior, or actual behavior is missing."};if(item.type==="issue"&&bug&&hasRepro)return{...item,column:"Ready for Maintainer Review",reason:"Issue appears to include bug-like wording and reproduction or actionability details.",nextAction:"Inspect reproduction, expected behavior, actual behavior, and affected scope."};if(item.type==="issue"&&bug)return{...item,column:"Needs Reproduction",reason:"Bug-like report without clear reproduction details.",nextAction:stale?"Inspect missing reproduction details and also check whether the age/relevance still justifies follow-up.":"Inspect what reproduction, environment, expected behavior, or actual behavior is missing."};if(item.type==="pr"&&/\b(tests?|validation|checklist|lint|typecheck|build)\b/.test(text))return{...item,column:"Ready for Maintainer Review",reason:"Non-draft PR mentions tests or validation.",nextAction:"Inspect scope, test coverage, and risk before maintainer judgment."};if(docs)return{...item,column:"Docs Candidate",reason:item.type==="pr"?"Pull request appears to involve documentation or docs-only work.":"Labels or text suggest documentation work.",nextAction:"Inspect whether this is a docs gap, question, or docs-change candidate."};if(stale)return{...item,column:"Stale Candidate",reason:"No recent activity for 30+ days.",nextAction:"Inspect whether the item is still relevant before any further action."};return{...item,column:"Unclassified",reason:"Imported from public GitHub and no strong rule matched.",nextAction:"Inspect manually and assign a category."}}
-function normalizeItem(item){const isPR=!!item.pull_request;return{number:item.number,title:item.title||"(untitled)",type:isPR?"pr":"issue",labels:labelsOf(item.labels),author:item.user?.login||"unknown",updatedAt:item.updated_at||new Date().toISOString(),body:item.body||"",comments:[],draft:/^\s*draft\b|^\s*draft:/i.test(item.title||""),htmlUrl:item.html_url||""}}
-async function fetchJson(url){const response=await fetch(url,{headers:{"Accept":"application/vnd.github+json"}});if(!response.ok){const detail=await response.text().catch(()=>"");throw new Error(`GitHub request failed: ${response.status} ${response.statusText}${detail?`\n${detail.slice(0,220)}`:""}`)}return response.json()}
-function readJson(key,fallback){try{const value=JSON.parse(localStorage.getItem(key)||"null");return Array.isArray(value)?value:fallback}catch(error){return fallback}}
-function writeJson(key,value){localStorage.setItem(key,JSON.stringify(value))}
-function getOwnerHistory(){return readJson(OWNER_HISTORY_KEY,[])}
-function saveOwnerHistory(owner){const normalized=owner.trim();if(!normalized)return;writeJson(OWNER_HISTORY_KEY,[normalized,...getOwnerHistory().filter(item=>item.toLowerCase()!==normalized.toLowerCase())].slice(0,10));renderOwnerHistory()}
-function renderOwnerHistory(){$("ownerHistoryList").innerHTML=getOwnerHistory().map(owner=>`<option value="${esc(owner)}"></option>`).join("")}
-function getRepoHistory(){return readJson(REPO_HISTORY_KEY,[])}
-function getRepoHistoryMap(){return new Map(getRepoHistory().map(repo=>[repo.full_name,repo]))}
-function historySafeNumber(value){return Number.isFinite(Number(value))?Number(value):0}
-function repoHistoryEntry(repo){return{full_name:repo.full_name,html_url:repo.html_url,description:repo.description||"",updated_at:repo.updated_at||"",open_issues_count:historySafeNumber(repo.open_issues_count),stargazers_count:historySafeNumber(repo.stargazers_count),forks_count:historySafeNumber(repo.forks_count),language:repo.language||"",lastOpenedAt:new Date().toISOString(),openCount:historySafeNumber(repo.openCount)+1}}
-function saveRepoHistory(repo){if(!repo?.full_name)return;const history=getRepoHistory(),existing=history.find(item=>item.full_name===repo.full_name),entry=repoHistoryEntry({...existing,...repo,openCount:existing?.openCount||0});writeJson(REPO_HISTORY_KEY,[entry,...history.filter(item=>item.full_name!==repo.full_name)].slice(0,20));renderRecentRepos();if(repos.length)renderRepos()}
-function formatDate(iso){if(!iso)return"Unknown";const date=new Date(iso);return Number.isNaN(date.getTime())?"Unknown":date.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"})}
-function filteredRepos(){const query=$("repoSearchInput").value.trim().toLowerCase();return repos.filter(repo=>[repo.full_name,repo.name,repo.description,repo.language].join(" ").toLowerCase().includes(query))}
-function sortedRepos(list){const sort=$("repoSortSelect").value,history=getRepoHistoryMap(),withHistory=(repo,selector)=>{const item=history.get(repo.full_name);return item?selector(item):null},byNumber=(a,b,selector)=>selector(b)-selector(a),byHistoryDate=(a,b)=>{const av=withHistory(a,item=>new Date(item.lastOpenedAt||0).getTime()),bv=withHistory(b,item=>new Date(item.lastOpenedAt||0).getTime());if(av&&bv)return bv-av;if(av)return-1;if(bv)return 1;return a.full_name.localeCompare(b.full_name)},byHistoryCount=(a,b)=>{const av=withHistory(a,item=>historySafeNumber(item.openCount)),bv=withHistory(b,item=>historySafeNumber(item.openCount));if(av&&bv)return bv-av||byHistoryDate(a,b);if(av)return-1;if(bv)return 1;return a.full_name.localeCompare(b.full_name)};return [...list].sort((a,b)=>{if(sort==="name")return a.full_name.localeCompare(b.full_name);if(sort==="stars")return byNumber(a,b,repo=>historySafeNumber(repo.stargazers_count))||a.full_name.localeCompare(b.full_name);if(sort==="issues")return byNumber(a,b,repo=>historySafeNumber(repo.open_issues_count))||a.full_name.localeCompare(b.full_name);if(sort==="recently-opened")return byHistoryDate(a,b);if(sort==="frequently-opened")return byHistoryCount(a,b);return new Date(b.updated_at||0)-new Date(a.updated_at||0)||a.full_name.localeCompare(b.full_name)})}
-function repoCard(repo){const selected=selectedRepo?.full_name===repo.full_name,detailsOpen=openDetails.has(repo.full_name);return `<article class="repo" aria-selected="${selected}"><h3>${esc(repo.full_name)}</h3><div class="meta">${esc(repo.description||"No description")}</div><div class="meta">Updated ${esc((repo.updated_at||"").slice(0,10))} · Open issues ${Number(repo.open_issues_count||0)}</div><div class="selected-actions ${selected?"is-open":""}"><div class="actions"><button class="btn primary" type="button" data-open-board="${esc(repo.full_name)}">Open board</button><a class="btn" href="${esc(repo.html_url)}" target="_blank" rel="noreferrer" data-open-github="${esc(repo.full_name)}">Open on GitHub</a></div><p class="small">Open board imports public issues and PRs into local board data, then opens Maintainer Flowboard.</p></div><div class="actions aux-actions">${selected?"":`<button class="btn primary" type="button" data-select="${esc(repo.full_name)}">Select repo</button>`}<button class="btn minor" type="button" data-details="${esc(repo.full_name)}">${detailsOpen?"Hide details":"Details"}</button></div><div class="details ${detailsOpen?"is-open":""}" id="details-${esc(repo.id||repo.full_name)}"><div class="meta">Language: ${esc(repo.language||"Unknown")}</div><div class="meta">Stars: ${Number(repo.stargazers_count||0)} · Forks: ${Number(repo.forks_count||0)}</div><div class="meta">Default branch: ${esc(repo.default_branch||"default")}</div></div></article>`}
-function bindRepoActions(scope=document){scope.querySelectorAll("[data-select]").forEach(button=>button.onclick=()=>selectRepo(button.dataset.select));scope.querySelectorAll("[data-details]").forEach(button=>button.onclick=()=>toggleDetails(button.dataset.details));scope.querySelectorAll("[data-open-board]").forEach(button=>button.onclick=()=>openBoard(button.dataset.openBoard,button));scope.querySelectorAll("[data-open-github]").forEach(link=>link.onclick=()=>recordGithubOpen(link.dataset.openGithub))}
-function renderRepos(){const filtered=sortedRepos(filteredRepos());$("repoList").innerHTML=filtered.map(repoCard).join("")||"<p>No matching repositories.</p>";bindRepoActions($("repoList"))}
-function renderRecentRepos(){const history=getRepoHistory();$("recentSection").classList.toggle("is-open",history.length>0);$("recentRepoList").innerHTML=history.map(repo=>`<article class="recent-repo"><h3>${esc(repo.full_name)}</h3><div class="meta">${esc(repo.description||"No description")}</div><div class="meta">Last opened ${esc(formatDate(repo.lastOpenedAt))} · Opened ${Number(repo.openCount||0)} ${Number(repo.openCount||0)===1?"time":"times"}</div><div class="actions"><button class="btn primary" type="button" data-open-board="${esc(repo.full_name)}">Open board</button><a class="btn" href="${esc(repo.html_url)}" target="_blank" rel="noreferrer" data-open-github="${esc(repo.full_name)}">Open on GitHub</a></div></article>`).join("");bindRepoActions($("recentRepoList"))}
-function findRepo(fullName){return repos.find(candidate=>candidate.full_name===fullName)||getRepoHistory().find(candidate=>candidate.full_name===fullName)}
-function toggleDetails(fullName){if(openDetails.has(fullName))openDetails.delete(fullName);else openDetails.add(fullName);renderRepos()}
-function selectRepo(fullName){selectedRepo=repos.find(candidate=>candidate.full_name===fullName);if(!selectedRepo)return;renderRepos()}
-function recordGithubOpen(fullName){const repo=findRepo(fullName);if(repo)saveRepoHistory(repo)}
-async function fetchRepos(){const owner=$("ownerInput").value.trim();if(!owner){setStatus("Enter a GitHub user or organization first.","danger");return}selectedRepo=null;openDetails.clear();$("fetchButton").disabled=true;$("repoList").innerHTML="";setStatus(`Fetching public repositories for ${owner}...`);try{repos=await fetchJson(`https://api.github.com/users/${encodeURIComponent(owner)}/repos?type=owner&sort=updated&per_page=100`);if(!repos.length){setStatus(`No public repositories found for ${owner}.`,"danger");return}saveOwnerHistory(owner);$("repoTools").style.display="grid";$("repoSearchInput").value="";$("repoSortSelect").value="updated";renderRepos();setStatus(`Found ${repos.length} public repositories for ${owner}. Select one, or use Details first.`,"ok")}catch(error){repos=[];setStatus(error.message,"danger")}finally{$("fetchButton").disabled=false}}
-async function openBoard(fullName,button){const repo=findRepo(fullName);if(!repo)return;button.disabled=true;saveRepoHistory(repo);setStatus(`Importing ${repo.full_name} into the board...`);try{const raw=await fetchJson(`https://api.github.com/repos/${encodeURIComponent(repo.full_name).replace("%2F","/")}/issues?state=open&per_page=50&sort=updated&direction=desc`),items=raw.map(normalizeItem).map(classifyItem),state={repoName:repo.full_name,maintainerNote:`Imported from public GitHub repository ${repo.full_name}.`,items};localStorage.setItem(STORE_KEY,JSON.stringify(state));location.href="./board.html"}catch(error){setStatus(error.message,"danger")}finally{button.disabled=false}}
-$("fetchButton").onclick=fetchRepos;
-$("ownerInput").addEventListener("keydown",event=>{if(event.key==="Enter")fetchRepos()});
-$("repoSearchInput").addEventListener("input",renderRepos);
-$("repoSortSelect").addEventListener("change",renderRepos);
-renderOwnerHistory();
-renderRecentRepos();
-</script>
+  <script>location.replace("./index.html");</script>
 </body>
 </html>
