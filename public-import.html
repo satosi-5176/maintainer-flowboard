@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maintainer Flowboard — Public GitHub Import</title>
+  <style>
+    :root{--bg:#f6f8fb;--card:#fff;--ink:#102033;--muted:#64748b;--line:rgba(16,32,51,.12);--blue:#2563eb;--blueSoft:#dbeafe;--warn:#fef3c7;--shadow:0 10px 30px rgba(15,23,42,.08)}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:980px;margin:0 auto;padding:20px;display:grid;gap:16px}.card{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;display:grid;gap:12px}.eyebrow{display:inline-flex;width:max-content;padding:7px 10px;border-radius:999px;background:var(--blueSoft);color:#1e3a8a;font-size:13px;font-weight:850}h1{margin:0;font-size:clamp(32px,5vw,52px);line-height:1.03;letter-spacing:-.04em}p{margin:0;color:var(--muted);line-height:1.55}label{font-weight:850;font-size:13px;color:var(--muted)}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff;color:var(--ink);font:inherit}textarea{min-height:240px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.row{display:grid;grid-template-columns:minmax(0,1fr) 160px;gap:10px}.actions{display:flex;flex-wrap:wrap;gap:10px}.btn{min-height:42px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:0 14px;font-weight:850;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:inherit;text-decoration:none}.primary{background:var(--blue);color:white;border-color:transparent}.warn{background:var(--warn);color:#78350f}.status{padding:12px;border:1px solid var(--line);border-radius:12px;background:#f8fafc;white-space:pre-wrap;color:var(--muted)}.small{font-size:13px}.danger{color:#991b1b}.ok{color:#166534}@media(max-width:720px){.app{padding:14px}.row{grid-template-columns:1fr}.actions{display:grid}.btn{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="card">
+      <div class="eyebrow">Public GitHub import</div>
+      <h1>Import public issues and PRs</h1>
+      <p>This helper fetches public GitHub issues and pull requests, stores them in the same local board data used by Maintainer Flowboard, then lets you return to the board. It does not use a token, does not write to GitHub, and only works for public repositories.</p>
+    </section>
+
+    <section class="card">
+      <label for="repoInput">Repository</label>
+      <div class="row">
+        <input id="repoInput" placeholder="owner/repo" autocomplete="off">
+        <select id="limitInput" aria-label="Import limit">
+          <option value="30">30 items</option>
+          <option value="50" selected>50 items</option>
+          <option value="100">100 items</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="fetchButton" type="button">Fetch public items</button>
+        <button class="btn" id="saveButton" type="button" disabled>Save to board</button>
+        <a class="btn" href="./index.html">Back to board</a>
+      </div>
+      <div id="status" class="status">Enter a public repository such as owner/repo, then fetch.</div>
+      <p class="small">GitHub unauthenticated API rate limits can apply. If fetching fails, wait and try again or use pasted JSON in the main board.</p>
+    </section>
+
+    <section class="card">
+      <label for="previewOutput">Fetched JSON preview</label>
+      <textarea id="previewOutput" readonly placeholder="Fetched items will appear here."></textarea>
+    </section>
+  </main>
+<script>
+const STORE_KEY="maintainer-flowboard-v0.1";
+let importedItems=[];
+const $=id=>document.getElementById(id);
+function setStatus(message,kind){const target=$("status");target.textContent=message;target.className="status"+(kind?` ${kind}`:"")}
+function parseRepo(value){const trimmed=String(value||"").trim().replace(/^https:\/\/github\.com\//,"").replace(/\.git$/,"").replace(/\/$/,"");const parts=trimmed.split("/").filter(Boolean);if(parts.length<2)throw new Error("Repository must be in owner/repo format.");return{owner:parts[0],repo:parts[1],full:`${parts[0]}/${parts[1]}`}}
+function labelsOf(labels){return Array.isArray(labels)?labels.map(label=>typeof label==="string"?label:label?.name).filter(Boolean):[]}
+function normalizeGithubItem(item){const isPR=!!item.pull_request;return{number:item.number,title:item.title||"(untitled)",type:isPR?"pr":"issue",labels:labelsOf(item.labels),author:item.user?.login||"unknown",updatedAt:item.updated_at||new Date().toISOString(),body:item.body||"",comments:[],draft:false,htmlUrl:item.html_url||""}}
+async function fetchPage(url){const response=await fetch(url,{headers:{"Accept":"application/vnd.github+json"}});if(!response.ok){const detail=await response.text().catch(()=>"");throw new Error(`GitHub request failed: ${response.status} ${response.statusText}${detail?`\n${detail.slice(0,240)}`:""}`)}return response.json()}
+async function fetchPublicItems(){const {full}=parseRepo($("repoInput").value);const limit=Math.min(Number($("limitInput").value)||50,100);setStatus(`Fetching up to ${limit} open issues/PRs from ${full}...`);$("fetchButton").disabled=true;$("saveButton").disabled=true;try{const url=`https://api.github.com/repos/${encodeURIComponent(full).replace("%2F","/")}/issues?state=open&per_page=${limit}&sort=updated&direction=desc`;const raw=await fetchPage(url);importedItems=raw.map(normalizeGithubItem);$("previewOutput").value=JSON.stringify(importedItems,null,2);const issues=importedItems.filter(item=>item.type==="issue").length,prs=importedItems.filter(item=>item.type==="pr").length;setStatus(`Fetched ${importedItems.length} items from ${full}.\nIssues: ${issues}\nPRs: ${prs}\nReview the preview, then save to board.`,"ok");$("saveButton").disabled=importedItems.length===0}catch(error){importedItems=[];$("previewOutput").value="";setStatus(error.message,"danger")}finally{$("fetchButton").disabled=false}}
+function saveToBoard(){if(!importedItems.length){setStatus("No imported items to save.","danger");return}const {full}=parseRepo($("repoInput").value);const state={repoName:full,maintainerNote:`Imported from public GitHub repository ${full}.`,items:importedItems};localStorage.setItem(STORE_KEY,JSON.stringify(state));setStatus(`Saved ${importedItems.length} items to Maintainer Flowboard local data. Open the board to review classifications.`,"ok")}
+$("fetchButton").onclick=fetchPublicItems;
+$("saveButton").onclick=saveToBoard;
+$("repoInput").addEventListener("keydown",event=>{if(event.key==="Enter")fetchPublicItems()});
+</script>
+</body>
+</html>
