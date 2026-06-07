@@ -32,7 +32,7 @@ const classifyImported = loadClassifier('public-import.html', 'classifyImportedI
 
 function loadBoardAttention() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
-  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'securityDataRisk', 'apiKeyRisk', 'secondarySignals'];
+  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'cspNonceHardeningRisk', 'securityDataRisk', 'apiKeyRisk', 'secondarySignals'];
   const context = { Date };
   vm.createContext(context);
   vm.runInContext(`function daysOld(iso){return Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/86400000)}\n${names.map((name) => extractFunction(source, name)).join('\n')}\nthis.secondarySignals = secondarySignals;`, context);
@@ -43,7 +43,7 @@ const secondarySignals = loadBoardAttention();
 
 function loadBoardPacketRenderer() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
-  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'securityDataRisk', 'apiKeyRisk', 'secondarySignals', 'confidenceLabel', 'packetConfidence', 'packetEvidence', 'packetCaution', 'compactRoutineReadyPR', 'appendPacketGroup'];
+  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'cspNonceHardeningRisk', 'securityDataRisk', 'apiKeyRisk', 'secondarySignals', 'confidenceLabel', 'packetConfidence', 'packetEvidence', 'packetCaution', 'compactRoutineReadyPR', 'appendPacketGroup'];
   const context = { Date };
   vm.createContext(context);
   vm.runInContext(`function daysOld(iso){return Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/86400000)}\nfunction classificationConfidenceMeta(){return {confidence:'medium',evidenceSummary:'Fallback packet metadata.',caution:''}}\n${names.map((name) => extractFunction(source, name)).join('\n')}\nthis.appendPacketGroup = appendPacketGroup;`, context);
@@ -273,6 +273,72 @@ test('classifier confidence metadata covers representative strong, medium, and w
     { title: 'Question about something unclear', body: 'Not sure where this belongs.', expectedColumn: 'Unclassified', expectedConfidence: 'low', evidenceIncludes: /No strong/ },
   ];
   for (const sample of samples) assertFixture(sample);
+});
+
+
+test('attention flags use CSP nonce hardening wording without changing classifier columns', () => {
+  const cspPr = classify(item({
+    repo: 'TanStack/query',
+    number: 10893,
+    type: 'pr',
+    title: 'fix(query-devtools): set window.nonce for goober CSP support',
+    body: 'Set window.nonce so goober works under Content Security Policy.',
+  }));
+  const cspIssue = classify(item({
+    repo: 'TanStack/query',
+    number: 10820,
+    title: 'bug(query-devtools): styleNonce prop has no effect because goober 2.1.17+ overwrites the nonce via window.nonce',
+    body: 'A strict style-src CSP needs the styleNonce to propagate.',
+  }));
+  const setupStyleSheetPr = classify(item({
+    repo: 'TanStack/query',
+    number: 10736,
+    type: 'pr',
+    title: 'fix(query-devtools): set window.nonce in setupStyleSheet',
+    body: 'Wire the nonce before setupStyleSheet creates styles.',
+  }));
+
+  assert.equal(cspPr.column, 'Ready for Maintainer Review');
+  assert.equal(cspIssue.column, 'Needs Reproduction');
+  assert.equal(setupStyleSheetPr.column, 'Ready for Maintainer Review');
+
+  for (const result of [cspPr, cspIssue, setupStyleSheetPr]) {
+    const signals = secondarySignals(result);
+    assert.ok(signals.some((signal) => signal.startsWith('CSP / nonce hardening check')), signals.join(' | '));
+    assert.ok(!signals.some((signal) => signal.startsWith('Security / data exposure check')), signals.join(' | '));
+  }
+});
+
+test('attention flags preserve direct data exposure, API key, and dependency security wording', () => {
+  const dataRisk = classify(item({ title: 'Lock down Supabase Data API / public schema exposure (RLS disabled)', body: 'Direct public schema exposure.' }));
+  const apiKey = classify(item({ title: 'Google Maps embeds broken on tldraw.com due to expired API key', body: 'Direct expired API key operational outage.' }));
+  const dependencySecurity = classify(item({ type: 'pr', title: 'chore(deps): update dependency vite to v7.1.5 [security]', author: 'renovate[bot]', body: 'Security update.' }));
+
+  assert.ok(secondarySignals(dataRisk).some((signal) => signal.startsWith('Security / data exposure check')));
+  assert.ok(secondarySignals(apiKey).some((signal) => signal.startsWith('API key / operational check')));
+  assert.ok(!secondarySignals(apiKey).some((signal) => signal.startsWith('Security / data exposure check')));
+  assert.ok(secondarySignals(dependencySecurity).some((signal) => signal.startsWith('Dependency security update check')));
+});
+
+test('public importer docs confidence reason omits file-list wording unless files are present', () => {
+  const docsByLabel = classifyImported(item({
+    type: 'pr',
+    title: 'Update cache guide examples',
+    labels: ['documentation'],
+    body: 'Public import fetches issues/PRs but not changed files.',
+  }));
+  const docsByFiles = classifyImported(item({
+    type: 'pr',
+    title: 'Update cache guide examples',
+    files: ['docs/cache.md'],
+    body: 'Changed files supplied by fixture metadata.',
+  }));
+
+  assert.equal(docsByLabel.column, 'Docs Candidate');
+  assert.equal(docsByLabel.evidenceSummary, 'Title, label, or GitHub Type gives a strong documentation signal.');
+  assert.doesNotMatch(docsByLabel.evidenceSummary, /file list/i);
+  assert.equal(docsByFiles.column, 'Docs Candidate');
+  assert.equal(docsByFiles.evidenceSummary, 'Changed files are docs-only, a strong documentation signal.');
 });
 
 test('attention flags ignore dependency dashboard body-only token and exposure noise', () => {
