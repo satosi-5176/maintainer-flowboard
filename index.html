@@ -92,11 +92,15 @@ const dependency=dependencyTitle||dependencyLabel||botAuthor;
 const releaseTitleLabel=/\b(release|changelog|migration|breaking|deprecat(?:e|ion|ed)|post-release|pre-release)\b/.test(titleLabels);
 const validationTask=isIssue&&/\b(validate|validation|qa|smoke test|manual test|real oss repository|test plan)\b/.test([title,body,labelText].join(" "));
 const bugText=[title,body].join(" ");
-const bug=isIssue&&/\b(bug|broken|fails?|failed|failing|error|pending unexpectedly|stuck|regression|expected|actual|reproduction|reproduce|steps|playground|crash(?:es|ed|ing)?|exception|unstable|incorrect|wrong|hangs?|does not|doesn't|not working|unexpected)\b/.test(bugText);
+const featureText=[title,body,labelText].join(" ");
+const strongFeatureTitle=/^(?:add|support)\b/.test(title)||/^make\b.*\b(?:easier to customi[sz]e|customi[sz]e|configurable|option|api|read)\b/.test(title)||/\b(?:add option|option for|option to|easier to customi[sz]e|customi[sz]e|configurable|expose|api|workspaces?|tooltip|modifier|shortcut|border style|indentation|waitforsync)\b/.test(titleLabels)||/\bsupport\b.+/.test(titleLabels);
+const feature=isIssue&&(strongFeatureTitle||/\b(feature request|proposal|request for feature|would like to add)\b/.test(featureText)||labelsInclude(/^enhancement$/))&&!/\b(?:not|is not|isn't) (?:a )?feature request\b/.test([title,body].join(" "));
+const operationalBug=isIssue&&/\b(broken|expired api[- ]key|lock down|rls disabled|public schema exposure|data exposure)\b/.test(bugText);
+const actionableBug=isIssue&&(operationalBug||/\b(stops responding|not invoked|does not|doesn't|should not|unexpectedly|wrong|not cleared|not cleaned up|covers text|floats outside)\b/.test(bugText));
+const bug=isIssue&&(actionableBug||/\b(bug|fails?|failed|failing|error|pending unexpectedly|stuck|regression|expected|actual|reproduction|reproduce|steps|playground|crash(?:es|ed|ing)?|exception|unstable|incorrect|hangs?|not working|unexpected)\b/.test(bugText));
 const hasRepro=/\b(playground|input|output|expected|actual|reproduce|reproduction|steps|stackblitz|codesandbox|minimal repro)\b|expected output/.test(bugText);
 const missingRepro=/\b(cannot reproduce|can't reproduce|cant reproduce|could not reproduce|no minimal reproduction|no reproduction|no repro|no reduced test case|no test case|no reliable steps|do not have reliable steps|don't have reliable steps|without (?:a )?(?:minimal |reduced )?(?:reproduction|repro|test case))\b/i.test(bugText);
 const issueDocs=docsLabel||titleStartsDocs||/\b(?:documentation|docs|jsdoc|readme|guide|troubleshooting)\b/.test(title);
-const feature=isIssue&&(/\b(feature request|proposal|request for feature|would like to add)\b/.test([title,body,labelText].join(" "))||labelsInclude(/^enhancement$/))&&!/\b(?:not|is not|isn't) (?:a )?feature request\b/.test([title,body].join(" "));
 if(isPR){
 if(item.draft)return asResult("Waiting for Author Response","Pull request is draft and not ready for maintainer review.","Inspect what remains before the author marks it ready for review.");
 if(dependency)return asResult("Dependency / Bot Maintenance","Strong dependency or bot-maintenance signal detected in the title, labels, or author.","Inspect dependency update status and project bot policy.");
@@ -108,10 +112,12 @@ if(dependency)return asResult("Dependency / Bot Maintenance","Strong dependency 
 if(releaseTitleLabel)return asResult("Tracking / Release Follow-up","Title or labels indicate release tracking or follow-up work.","Inspect release state, linked PRs, and remaining follow-up notes.");
 if(issueDocs)return asResult("Docs Candidate","Strong title or label signal indicates documentation-related work.","Inspect whether this is a docs gap, question, or docs-change candidate.");
 if(validationTask)return asResult("Ready for Maintainer Review","Validation or QA task detected.","Inspect validation scope, target repository, expected evidence, and recorded results.");
+if(operationalBug)return asResult("Ready for Maintainer Review","Issue has strong operational, security, or data-exposure wording.","Inspect impact, affected scope, and the evidence needed for maintainer judgment.");
+if(feature)return asResult("Feature / Request","Strong feature request, product-design, configuration, or API-shape signal detected.","Inspect whether this request fits project scope and maintenance cost.");
+if(actionableBug)return asResult("Ready for Maintainer Review","Issue has strong actionable bug, operational, security, or data-exposure wording.","Inspect impact, affected scope, and the evidence needed for maintainer judgment.");
 if(bug&&missingRepro)return asResult("Needs Reproduction","Bug-like report says reproduction is missing or unreliable.",stale?"Inspect missing reproduction details and also check whether the age/relevance still justifies follow-up.":"Inspect what reproduction, environment, expected behavior, or actual behavior is missing.");
 if(bug&&hasRepro)return asResult("Ready for Maintainer Review","Issue appears to include bug-like wording and reproduction or actionability details.","Inspect reproduction, expected behavior, actual behavior, and affected scope.");
 if(bug)return asResult("Needs Reproduction","Bug-like report without clear reproduction details.",stale?"Inspect missing reproduction details and also check whether the age/relevance still justifies follow-up.":"Inspect what reproduction, environment, expected behavior, or actual behavior is missing.");
-if(feature)return asResult("Feature / Request","Strong feature request or enhancement signal detected.","Inspect whether this request fits project scope and maintenance cost.");
 if(stale)return asResult("Stale Candidate","No recent activity for 30+ days.","Inspect whether the item is still relevant before any further action.");
 return asResult("Unclassified","Imported from public GitHub and no strong rule matched.","Inspect manually and assign a category.");
 }
