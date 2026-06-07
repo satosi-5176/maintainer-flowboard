@@ -51,32 +51,46 @@ function parseRepo(value){const trimmed=String(value||"").trim().replace(/^https
 function labelsOf(labels){return Array.isArray(labels)?labels.map(label=>typeof label==="string"?label:label?.name).filter(Boolean):[]}
 function daysOld(iso){return Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/86400000)}
 function classifyImportedItem(item){
-const title=(item.title||"").toLowerCase(),body=(item.body||"").toLowerCase(),labelText=(item.labels||[]).join(" ").toLowerCase(),author=(item.author||"").toLowerCase(),titleLabels=[title,labelText].join(" "),text=[title,body,labelText].join(" "),stale=daysOld(item.updatedAt)>=30;
+const title=(item.title||"").toLowerCase(),body=(item.body||"").toLowerCase(),labels=item.labels||[],labelText=labels.join(" ").toLowerCase(),author=(item.author||"").toLowerCase(),titleLabels=[title,labelText].join(" "),stale=daysOld(item.updatedAt)>=30;
 const asResult=(column,reason,nextAction)=>{return{...item,column,reason,nextAction}};
 const isPR=item.type==="pr",isIssue=item.type==="issue";
-const docs=/\bdocs?(?:\([^)]*\))?:|\b(documentation|readme|jsdoc|guide|troubleshooting)\b/.test(text);
-const release=/\b(release|changelog|migration|breaking|deprecation|deprecated|post-release|tracking|track)\b/.test(titleLabels);
-const dependency=/\b(dependency dashboard|lock file maintenance|renovate|dependabot|chore\((?:deps|dependencies)\)|deps?:|dependencies?|dependency update|security update)\b/.test(titleLabels)||/\b(dependency dashboard|renovate|dependabot)\b/.test(text)||/\b(renovate|dependabot)(?:\[bot\])?\b/.test(author);
-const validationTask=isIssue&&/\b(validate|validation|qa|smoke test|manual test|real oss repository|test plan)\b/.test(text);
-const bug=isIssue&&/\b(bug|crash(?:es|ed|ing)?|error|broken|fail(?:s|ed|ing)?|exception|regression|unstable|incorrect|wrong|hangs?|stuck|pending|does not|doesn't|not working|unexpected)\b/.test(text);
-const hasRepro=/\b(playground|input|output|expected|actual|reproduce|reproduction|steps|stackblitz|codesandbox|minimal repro)\b|expected output/.test(text);
-const missingRepro=/\b(cannot reproduce|can't reproduce|cant reproduce|could not reproduce|no minimal reproduction|no reproduction|no repro|no reduced test case|no test case|no reliable steps|do not have reliable steps|don't have reliable steps|without (?:a )?(?:minimal |reduced )?(?:reproduction|repro|test case))\b/i.test(text);
-const feature=isIssue&&/\b(feature request|enhancement|proposal|request for feature|would like to add)\b/.test(text)&&!/\b(?:not|is not|isn\'t) (?:a )?feature request\b/.test(text);
+const files=Array.isArray(item.files)?item.files.map(file=>String(typeof file==="string"?file:file?.filename||file?.path||"").toLowerCase()).filter(Boolean):[];
+const labelsInclude=pattern=>labels.some(label=>pattern.test(String(label).toLowerCase()));
+const titleStartsDocs=/^docs(?:\b|\(|:)/.test(title);
+const docsLabel=labelsInclude(/^(docs?|documentation)$/);
+const docsOnlyFiles=files.length>0&&files.every(file=>/(^|\/)(docs?|documentation|guides?|examples?)\//.test(file)||/\.mdx?$/.test(file)||/(^|\/)readme(?:\.[^/]*)?$/.test(file));
+const docsScope=/^(?:fix|feat|refactor|perf|test)\((?:docs?|documentation|readme|jsdoc)\)/.test(title);
+const docsTitle=titleStartsDocs||docsScope||/\breadme\b/.test(title)||/\b(?:documentation|docs|jsdoc)(?:[- ]?only| only| update| changes?| fix| improvement| typo| cleanup| examples?)\b/.test(title)||/\b(?:update|fix|improve|add|correct|clarify)\b.*\b(?:documentation|docs|jsdoc|readme|guide|troubleshooting)\b/.test(title);
+const docsStrong=docsLabel||docsOnlyFiles||docsTitle;
+const implementationTitle=/^(?:fix|feat|refactor|perf|test)(?:\b|\(|:)/.test(title);
+const prDocs=docsStrong&&(!implementationTitle||docsLabel||docsOnlyFiles||titleStartsDocs||docsScope||/\breadme\b/.test(title)||/\b(?:docs?|documentation|jsdoc)[- ]?only\b/.test(title));
+const dependencyTitle=/^chore\(deps\)/.test(title)||/\b(dependency dashboard|lock file maintenance|renovate|dependabot)\b/.test(title);
+const dependencyLabel=labelsInclude(/\b(dependencies?|dependency|bot|renovate|dependabot)\b/);
+const botAuthor=/\b(renovate|dependabot)\b/.test(author)||/\[bot\]$/.test(author)||/(^|[-_])bot$/.test(author);
+const dependency=dependencyTitle||dependencyLabel||botAuthor;
+const releaseTitleLabel=/\b(release|changelog|migration|breaking|deprecat(?:e|ion|ed)|post-release|pre-release)\b/.test(titleLabels);
+const validationTask=isIssue&&/\b(validate|validation|qa|smoke test|manual test|real oss repository|test plan)\b/.test([title,body,labelText].join(" "));
+const bugText=[title,body].join(" ");
+const bug=isIssue&&/\b(bug|broken|fails?|failed|failing|error|pending unexpectedly|stuck|regression|expected|actual|reproduction|reproduce|steps|playground|crash(?:es|ed|ing)?|exception|unstable|incorrect|wrong|hangs?|does not|doesn't|not working|unexpected)\b/.test(bugText);
+const hasRepro=/\b(playground|input|output|expected|actual|reproduce|reproduction|steps|stackblitz|codesandbox|minimal repro)\b|expected output/.test(bugText);
+const missingRepro=/\b(cannot reproduce|can't reproduce|cant reproduce|could not reproduce|no minimal reproduction|no reproduction|no repro|no reduced test case|no test case|no reliable steps|do not have reliable steps|don't have reliable steps|without (?:a )?(?:minimal |reduced )?(?:reproduction|repro|test case))\b/i.test(bugText);
+const issueDocs=docsLabel||titleStartsDocs||/\b(?:documentation|docs|jsdoc|readme|guide|troubleshooting)\b/.test(title);
+const feature=isIssue&&(/\b(feature request|proposal|request for feature|would like to add)\b/.test([title,body,labelText].join(" "))||labelsInclude(/^enhancement$/))&&!/\b(?:not|is not|isn't) (?:a )?feature request\b/.test([title,body].join(" "));
 if(isPR){
-if(item.draft)return asResult("Waiting for Author Response","Pull request appears to be draft or not ready for review.","Inspect whether the missing author response is still needed before any follow-up.");
-if(dependency)return asResult("Dependency / Bot Maintenance","Dependency or bot-maintained tracking item detected.","Inspect dependency update status and project bot policy.");
-if(docs)return asResult("Docs Candidate","Pull request appears to involve documentation or docs-only work.","Inspect whether this is a docs gap, question, or docs-change candidate.");
-if(release)return asResult("Tracking / Release Follow-up","Title or labels indicate release tracking or follow-up work.","Inspect release state, linked PRs, and remaining follow-up notes.");
+if(item.draft)return asResult("Waiting for Author Response","Pull request is draft and not ready for maintainer review.","Inspect what remains before the author marks it ready for review.");
+if(dependency)return asResult("Dependency / Bot Maintenance","Strong dependency or bot-maintenance signal detected in the title, labels, or author.","Inspect dependency update status and project bot policy.");
+if(prDocs)return asResult("Docs Candidate","Strong title, label, or changed-file signal indicates documentation-only work.","Inspect whether this is a docs gap, question, or docs-change candidate.");
+if(releaseTitleLabel)return asResult("Tracking / Release Follow-up","Title or labels indicate release tracking or follow-up work.","Inspect release state, linked PRs, and remaining follow-up notes.");
 return asResult("Ready for Maintainer Review","Non-draft pull request is ready for maintainer review.","Inspect scope, test coverage, and risk before maintainer judgment.");
 }
-if(dependency)return asResult("Dependency / Bot Maintenance","Dependency or bot-maintained tracking item detected.","Inspect dependency update status and project bot policy.");
-if(docs)return asResult("Docs Candidate","Labels or text suggest documentation work.","Inspect whether this is a docs gap, question, or docs-change candidate.");
-if(release)return asResult("Tracking / Release Follow-up","Title or labels indicate release tracking or follow-up work.","Inspect release state, linked PRs, and remaining follow-up notes.");
-if(feature)return asResult("Feature / Request","Strong feature request or enhancement signal detected.","Inspect whether this request fits project scope and maintenance cost.");
+if(dependency)return asResult("Dependency / Bot Maintenance","Strong dependency or bot-maintenance signal detected in the title, labels, or author.","Inspect dependency update status and project bot policy.");
+if(releaseTitleLabel)return asResult("Tracking / Release Follow-up","Title or labels indicate release tracking or follow-up work.","Inspect release state, linked PRs, and remaining follow-up notes.");
 if(validationTask)return asResult("Ready for Maintainer Review","Validation or QA task detected.","Inspect validation scope, target repository, expected evidence, and recorded results.");
 if(bug&&missingRepro)return asResult("Needs Reproduction","Bug-like report says reproduction is missing or unreliable.",stale?"Inspect missing reproduction details and also check whether the age/relevance still justifies follow-up.":"Inspect what reproduction, environment, expected behavior, or actual behavior is missing.");
 if(bug&&hasRepro)return asResult("Ready for Maintainer Review","Issue appears to include bug-like wording and reproduction or actionability details.","Inspect reproduction, expected behavior, actual behavior, and affected scope.");
 if(bug)return asResult("Needs Reproduction","Bug-like report without clear reproduction details.",stale?"Inspect missing reproduction details and also check whether the age/relevance still justifies follow-up.":"Inspect what reproduction, environment, expected behavior, or actual behavior is missing.");
+if(issueDocs)return asResult("Docs Candidate","Strong issue title or label signal indicates documentation work.","Inspect whether this is a docs gap, question, or docs-change candidate.");
+if(feature)return asResult("Feature / Request","Strong feature request or enhancement signal detected.","Inspect whether this request fits project scope and maintenance cost.");
 if(stale)return asResult("Stale Candidate","No recent activity for 30+ days.","Inspect whether the item is still relevant before any further action.");
 return asResult("Unclassified","Imported from public GitHub and no strong rule matched.","Inspect manually and assign a category.");
 }
