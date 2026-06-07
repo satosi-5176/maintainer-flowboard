@@ -281,8 +281,8 @@ test('attention flags use CSP nonce hardening wording without changing classifie
     repo: 'TanStack/query',
     number: 10893,
     type: 'pr',
-    title: 'fix(query-devtools): set window.nonce for goober CSP support',
-    body: 'Set window.nonce so goober works under Content Security Policy.',
+    title: 'fix(query-devtools): set window.__nonce__ for goober CSP support',
+    body: 'Set window.__nonce__ so goober works under Content Security Policy.',
   }));
   const cspIssue = classify(item({
     repo: 'TanStack/query',
@@ -308,6 +308,78 @@ test('attention flags use CSP nonce hardening wording without changing classifie
     assert.ok(!signals.some((signal) => signal.startsWith('Security / data exposure check')), signals.join(' | '));
   }
 });
+
+test('attention flags suppress body-only CSP nonce noise on dependency maintenance', () => {
+  const broadDependencyUpdate = classify(item({
+    repo: 'TanStack/query',
+    number: 10780,
+    type: 'pr',
+    title: 'chore(deps): update all non-major dependencies',
+    author: 'renovate[bot]',
+    labels: ['dependencies'],
+    body: 'Nested changelog text mentions styleNonce, window.nonce, goober CSP, and strict style-src fixes.',
+  }));
+  const dependencySecurityUpdate = classify(item({
+    repo: 'TanStack/query',
+    number: 10554,
+    type: 'pr',
+    title: 'chore(deps): update dependency astro to v6 [security]',
+    author: 'renovate[bot]',
+    labels: ['dependencies'],
+    body: 'Dependency notes include Content Security Policy, styleNonce, and window.nonce details from linked releases.',
+  }));
+  const astroNodeSecurityUpdate = classify(item({
+    repo: 'TanStack/query',
+    number: 10333,
+    type: 'pr',
+    title: 'chore(deps): update dependency @astrojs/node to v10 [security]',
+    author: 'renovate[bot]',
+    labels: ['dependencies'],
+    body: 'Aggregate dependency notes mention nonce propagation and goober CSP support.',
+  }));
+  const dashboard = classify(item({
+    repo: 'TanStack/query',
+    number: 1,
+    title: 'Dependency Dashboard',
+    labels: ['dependencies'],
+    author: 'renovate[bot]',
+    body: 'Dashboard content links updates mentioning token permissions, CSP, nonce, styleNonce, window.nonce, and dependency text.',
+  }));
+
+  for (const result of [broadDependencyUpdate, dependencySecurityUpdate, astroNodeSecurityUpdate, dashboard]) {
+    const signals = secondarySignals(result);
+    assert.equal(result.column, 'Dependency / Bot Maintenance', result.title);
+    assert.ok(!signals.some((signal) => signal.startsWith('CSP / nonce hardening check')), `${result.title}: ${signals.join(' | ')}`);
+  }
+
+  assert.ok(secondarySignals(dependencySecurityUpdate).some((signal) => signal.startsWith('Dependency security update check')));
+  assert.ok(secondarySignals(astroNodeSecurityUpdate).some((signal) => signal.startsWith('Dependency security update check')));
+});
+
+test('attention flags allow direct CSP nonce title or label signals on dependency maintenance', () => {
+  const dependencyWithDirectTitle = classify(item({
+    repo: 'TanStack/query',
+    type: 'pr',
+    title: 'chore(deps): update goober CSP nonce compatibility fixture',
+    author: 'renovate[bot]',
+    labels: ['dependencies'],
+    body: 'Dependency update body is not needed for the signal.',
+  }));
+  const dependencyWithDirectLabel = classify(item({
+    repo: 'TanStack/query',
+    type: 'pr',
+    title: 'chore(deps): update dependency goober to v3',
+    author: 'renovate[bot]',
+    labels: ['dependencies', 'Content Security Policy'],
+    body: 'Dependency update body is not needed for the signal.',
+  }));
+
+  assert.equal(dependencyWithDirectTitle.column, 'Dependency / Bot Maintenance');
+  assert.equal(dependencyWithDirectLabel.column, 'Dependency / Bot Maintenance');
+  assert.ok(secondarySignals(dependencyWithDirectTitle).some((signal) => signal.startsWith('CSP / nonce hardening check')));
+  assert.ok(secondarySignals(dependencyWithDirectLabel).some((signal) => signal.startsWith('CSP / nonce hardening check')));
+});
+
 
 test('attention flags preserve direct data exposure, API key, and dependency security wording', () => {
   const dataRisk = classify(item({ title: 'Lock down Supabase Data API / public schema exposure (RLS disabled)', body: 'Direct public schema exposure.' }));
@@ -342,11 +414,12 @@ test('public importer docs confidence reason omits file-list wording unless file
 });
 
 test('attention flags ignore dependency dashboard body-only token and exposure noise', () => {
-  const dashboard = classify(item({ repo: 'vitejs/vite', number: 4790, title: 'Dependency Dashboard', labels: ['dependencies'], body: 'Token permissions, public schema exposure, and workflow permission hardening appear only in aggregated linked update text.' }));
+  const dashboard = classify(item({ repo: 'vitejs/vite', number: 4790, title: 'Dependency Dashboard', labels: ['dependencies'], body: 'Token permissions, CSP, nonce, public schema exposure, and workflow permission hardening appear only in aggregated linked update text.' }));
   const signals = secondarySignals(dashboard);
   assert.equal(dashboard.column, 'Dependency / Bot Maintenance');
   assert.ok(!signals.some((signal) => signal.startsWith('CI/token permission hardening check')), signals.join(' | '));
   assert.ok(!signals.some((signal) => signal.startsWith('Security / data exposure check')), signals.join(' | '));
+  assert.ok(!signals.some((signal) => signal.startsWith('CSP / nonce hardening check')), signals.join(' | '));
 });
 
 test('attention flags keep direct security and API-key issue signals', () => {
