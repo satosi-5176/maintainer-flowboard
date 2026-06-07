@@ -41,6 +41,42 @@ function loadBoardAttention() {
 
 const secondarySignals = loadBoardAttention();
 
+function loadBoardPacketRenderer() {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
+  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'securityDataRisk', 'apiKeyRisk', 'secondarySignals', 'confidenceLabel', 'packetConfidence', 'packetEvidence', 'packetCaution', 'compactRoutineReadyPR', 'appendPacketGroup'];
+  const context = { Date };
+  vm.createContext(context);
+  vm.runInContext(`function daysOld(iso){return Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/86400000)}\nfunction classificationConfidenceMeta(){return {confidence:'medium',evidenceSummary:'Fallback packet metadata.',caution:''}}\n${names.map((name) => extractFunction(source, name)).join('\n')}\nthis.appendPacketGroup = appendPacketGroup;`, context);
+  return context.appendPacketGroup;
+}
+
+const appendPacketGroup = loadBoardPacketRenderer();
+
+function packetItem(overrides) {
+  return {
+    number: overrides.number || 1,
+    type: overrides.type || 'pr',
+    title: overrides.title || 'Example title',
+    labels: overrides.labels || [],
+    body: overrides.body || '',
+    author: overrides.author || 'human',
+    updatedAt: overrides.updatedAt || '2026-06-01T00:00:00Z',
+    column: overrides.column || 'Ready for Maintainer Review',
+    confidence: overrides.confidence || 'high',
+    evidenceSummary: overrides.evidenceSummary || 'GitHub PR state is non-draft; no stronger maintenance, docs, or release rule matched.',
+    caution: overrides.caution || '',
+    nextAction: overrides.nextAction || 'Inspect scope, test coverage, CI, linked issue verification, and risk before maintainer judgment.',
+    note: overrides.note || '',
+    ...overrides,
+  };
+}
+
+function renderPacketGroupFor(itemUnderTest) {
+  const lines = [];
+  appendPacketGroup(lines, 'Test group', [itemUnderTest], 'No items found.');
+  return lines.join('\n');
+}
+
 function item(overrides) {
   return {
     number: overrides.number || 1,
@@ -166,7 +202,60 @@ test('action packet clarifies classification confidence wording without bare con
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
   assert.match(source, /Classification confidence: \$/);
   assert.ok(source.includes('Classification confidence describes how strongly the item matched this review bucket. It is not a merge, close, release, or priority recommendation.'));
+  assert.ok(source.includes('Routine high-confidence ready PRs may be shown in a compact form. Items with medium/low confidence, cautions, or attention flags remain expanded.'));
   assert.doesNotMatch(source, /- Confidence:/);
+});
+
+
+test('action packet compacts normal high-confidence ready PRs without attention flags', () => {
+  const output = renderPacketGroupFor(packetItem({ number: 123, title: 'Example title' }));
+  assert.match(output, /- PR #123: Example title/);
+  assert.match(output, /Ready review candidate · High classification confidence/);
+  assert.match(output, /Check: scope, tests, CI, linked issue, and risk\./);
+  assert.doesNotMatch(output, /Current column:/);
+  assert.doesNotMatch(output, /Why surfaced:/);
+  assert.doesNotMatch(output, /Maintainer check:/);
+});
+
+test('action packet keeps ready PRs with secondary signals expanded', () => {
+  const output = renderPacketGroupFor(packetItem({ number: 124, title: 'Lock down public schema exposure', body: 'Security data exposure risk.' }));
+  assert.match(output, /Current column: Ready for Maintainer Review/);
+  assert.match(output, /Classification confidence: High/);
+  assert.match(output, /Why surfaced:/);
+  assert.match(output, /Maintainer check:/);
+  assert.match(output, /Secondary signals: Security \/ data exposure check/);
+  assert.doesNotMatch(output, /Ready review candidate · High classification confidence/);
+});
+
+test('action packet keeps medium-confidence issues expanded', () => {
+  const output = renderPacketGroupFor(packetItem({
+    number: 125,
+    type: 'issue',
+    title: 'Cache sometimes stops updating',
+    confidence: 'medium',
+    evidenceSummary: 'Title/body contains actionable bug wording with available evidence.',
+    caution: 'Confirm reproduction quality and affected scope before acting.',
+  }));
+  assert.match(output, /- Issue #125: Cache sometimes stops updating/);
+  assert.match(output, /Current column: Ready for Maintainer Review/);
+  assert.match(output, /Classification confidence: Medium — Confirm reproduction quality and affected scope before acting\./);
+  assert.match(output, /Why surfaced:/);
+  assert.match(output, /Maintainer check:/);
+  assert.doesNotMatch(output, /Ready review candidate · High classification confidence/);
+});
+
+test('action packet keeps docs, dependency, and release follow-up items expanded', () => {
+  const docs = renderPacketGroupFor(packetItem({ number: 126, title: 'docs: clarify cache guide', column: 'Docs Candidate' }));
+  const deps = renderPacketGroupFor(packetItem({ number: 127, title: 'chore(deps): update dependency dashboard', column: 'Dependency / Bot Maintenance', author: 'renovate[bot]' }));
+  const release = renderPacketGroupFor(packetItem({ number: 128, title: 'Follow up migration notes after release', column: 'Tracking / Release Follow-up' }));
+
+  for (const output of [docs, deps, release]) {
+    assert.match(output, /Current column:/);
+    assert.match(output, /Classification confidence: High/);
+    assert.match(output, /Why surfaced:/);
+    assert.match(output, /Maintainer check:/);
+    assert.doesNotMatch(output, /Ready review candidate · High classification confidence/);
+  }
 });
 
 test('cross-repo OSS classifier regression fixtures use conservative columns and facets', () => {
