@@ -30,6 +30,17 @@ function loadClassifier(file, name) {
 const classify = loadClassifier('index.html', 'classifyItem');
 const classifyImported = loadClassifier('public-import.html', 'classifyImportedItem');
 
+function loadBoardAttention() {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
+  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'securityDataRisk', 'apiKeyRisk', 'secondarySignals'];
+  const context = { Date };
+  vm.createContext(context);
+  vm.runInContext(`function daysOld(iso){return Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/86400000)}\n${names.map((name) => extractFunction(source, name)).join('\n')}\nthis.secondarySignals = secondarySignals;`, context);
+  return context.secondarySignals;
+}
+
+const secondarySignals = loadBoardAttention();
+
 function item(overrides) {
   return {
     number: overrides.number || 1,
@@ -48,6 +59,10 @@ function assertFixture(fixture) {
   const result = classify(item(fixture));
   assert.equal(result.column, fixture.expectedColumn, fixture.title);
   if (fixture.expectedFacet) assert.ok(result.facets?.includes(fixture.expectedFacet), `${fixture.title} expected facet ${fixture.expectedFacet}; got ${result.facets}`);
+  if (fixture.unexpectedColumn) assert.notEqual(result.column, fixture.unexpectedColumn, fixture.title);
+  if (fixture.unexpectedFacets) {
+    for (const facet of fixture.unexpectedFacets) assert.ok(!result.facets?.includes(facet), `${fixture.title} unexpected facet ${facet}; got ${result.facets}`);
+  }
   if (fixture.expectedFacets) {
     for (const facet of fixture.expectedFacets) assert.ok(result.facets?.includes(facet), `${fixture.title} expected facet ${facet}; got ${result.facets}`);
   }
@@ -125,6 +140,14 @@ const fixtures = [
   { repo: 'vitest-dev/vitest', number: 10521, title: 'fix(browser)!: encode path with plus sign', type: 'pr', labels: ['maybe automated'], body: 'Bot comment asks for human ownership and AI disclosure.', expectedColumn: 'Ready for Maintainer Review', expectedFacet: 'ai_disclosure_review' },
   { repo: 'storybookjs/storybook', number: 35080, title: 'Restore QR code share tool popover removed by v10.4 refactor', type: 'pr', body: 'CodeRabbit summary says New Features, but human title links regression restoration.', expectedColumn: 'Ready for Maintainer Review', expectedFacet: 'regression_release_migration' },
 
+  // S. Priority regression fixes from real-repo rechecks.
+  { repo: 'eslint/eslint', number: 20902, title: 'Bug: Inaccurate and missing typings for AST node parent references in the JS rule API', labels: ['bug', 'types'], body: 'The JS rule API typings have inaccurate parent references and missing node parent references.', expectedColumn: 'Ready for Maintainer Review', unexpectedColumn: 'Feature / Request' },
+  { repo: 'tldraw/tldraw', number: 9054, title: 'Lock down Supabase Data API / public schema exposure (RLS disabled)', body: 'Public schema exposure risk with RLS disabled should be locked down.', expectedColumn: 'Ready for Maintainer Review', expectedFacet: 'security_data_exposure', unexpectedColumn: 'Feature / Request' },
+  { repo: 'tldraw/tldraw', number: 9025, title: 'Google Maps embeds broken on tldraw.com due to expired API key', body: 'Embeds are broken because the API key expired in production config.', expectedColumn: 'Ready for Maintainer Review', expectedFacet: 'api_key_operational', unexpectedColumn: 'Feature / Request' },
+  { repo: 'vitejs/vite', number: 4790, title: 'Dependency Dashboard', labels: ['dependencies'], body: 'This dashboard aggregates updates. Linked items mention token permissions and workflow permission hardening.', expectedColumn: 'Dependency / Bot Maintenance', unexpectedFacets: ['security_hardening'] },
+  { repo: 'TanStack/query', number: 9991, title: 'chore(deps): update dependency vite to v6.4.2 [security]', type: 'pr', author: 'renovate[bot]', body: 'Automated dependency update. Body includes old roadmap-held linked context.', expectedColumn: 'Dependency / Bot Maintenance', expectedFacet: 'dependency_security_update', unexpectedColumn: 'Stale Candidate' },
+  { repo: 'vitejs/vite', number: 22617, title: 'fix(bundled-dev): errors should be kept when incremental build fails', type: 'pr', body: 'Normal fix PR. Linked issue body mentions backlog and roadmap-held context but title and labels do not.', expectedColumn: 'Ready for Maintainer Review', unexpectedColumn: 'Stale Candidate' },
+
   // S. Existing validated repo smoke checks.
   { repo: 'TanStack/query', number: 1, title: 'Query observer stops responding after reconnect', labels: ['bug'], body: 'Steps to reproduce, expected and actual included.', expectedColumn: 'Ready for Maintainer Review' },
   { repo: 'tldraw/tldraw', number: 2, title: 'Add modifier shortcut for custom tool', labels: ['enhancement'], body: 'Feature request.', expectedColumn: 'Feature / Request' },
@@ -136,6 +159,21 @@ test('cross-repo OSS classifier regression fixtures use conservative columns and
   for (const fixture of fixtures) assertFixture(fixture);
 });
 
+test('attention flags ignore dependency dashboard body-only token and exposure noise', () => {
+  const dashboard = classify(item({ repo: 'vitejs/vite', number: 4790, title: 'Dependency Dashboard', labels: ['dependencies'], body: 'Token permissions, public schema exposure, and workflow permission hardening appear only in aggregated linked update text.' }));
+  const signals = secondarySignals(dashboard);
+  assert.equal(dashboard.column, 'Dependency / Bot Maintenance');
+  assert.ok(!signals.some((signal) => signal.startsWith('CI/token permission hardening check')), signals.join(' | '));
+  assert.ok(!signals.some((signal) => signal.startsWith('Security / data exposure check')), signals.join(' | '));
+});
+
+test('attention flags keep direct security and API-key issue signals', () => {
+  const dataRisk = classify(item({ title: 'Lock down Supabase Data API / public schema exposure (RLS disabled)', body: 'Direct public schema exposure.' }));
+  const apiKey = classify(item({ title: 'Google Maps embeds broken on tldraw.com due to expired API key', body: 'Direct expired API key operational outage.' }));
+  assert.ok(secondarySignals(dataRisk).some((signal) => signal.startsWith('Security / data exposure check')));
+  assert.ok(secondarySignals(apiKey).some((signal) => signal.startsWith('API key / operational check')));
+});
+
 test('public importer classifier stays aligned with repository selector classifier for core guards', () => {
   const samples = [
     fixtures.find((fixture) => fixture.number === 35067),
@@ -143,6 +181,11 @@ test('public importer classifier stays aligned with repository selector classifi
     fixtures.find((fixture) => fixture.number === 35076),
     fixtures.find((fixture) => fixture.number === 94475),
     fixtures.find((fixture) => fixture.number === 16954),
+    fixtures.find((fixture) => fixture.number === 20902),
+    fixtures.find((fixture) => fixture.number === 9054),
+    fixtures.find((fixture) => fixture.number === 9025),
+    fixtures.find((fixture) => fixture.number === 9991),
+    fixtures.find((fixture) => fixture.number === 22617),
   ];
   for (const fixture of samples) {
     const result = classify(item(fixture));
