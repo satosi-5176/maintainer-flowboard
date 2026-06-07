@@ -32,7 +32,7 @@ const classifyImported = loadClassifier('public-import.html', 'classifyImportedI
 
 function loadBoardAttention() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
-  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'cspNonceHardeningRisk', 'securityDataRisk', 'apiKeyRisk', 'secondarySignals'];
+  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'cspNonceHardeningRisk', 'securityDataRisk', 'apiKeyRisk', 'isPullRequestItem', 'secondarySignals'];
   const context = { Date };
   vm.createContext(context);
   vm.runInContext(`function daysOld(iso){return Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/86400000)}\n${names.map((name) => extractFunction(source, name)).join('\n')}\nthis.secondarySignals = secondarySignals;`, context);
@@ -43,7 +43,7 @@ const secondarySignals = loadBoardAttention();
 
 function loadBoardPacketRenderer() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
-  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'cspNonceHardeningRisk', 'securityDataRisk', 'apiKeyRisk', 'secondarySignals', 'confidenceLabel', 'packetConfidence', 'packetEvidence', 'packetCaution', 'compactRoutineReadyPR', 'appendPacketGroup'];
+  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'cspNonceHardeningRisk', 'securityDataRisk', 'apiKeyRisk', 'isPullRequestItem', 'secondarySignals', 'confidenceLabel', 'packetConfidence', 'packetEvidence', 'packetCaution', 'compactRoutineReadyPR', 'appendPacketGroup'];
   const context = { Date };
   vm.createContext(context);
   vm.runInContext(`function daysOld(iso){return Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/86400000)}\nfunction classificationConfidenceMeta(){return {confidence:'medium',evidenceSummary:'Fallback packet metadata.',caution:''}}\n${names.map((name) => extractFunction(source, name)).join('\n')}\nthis.appendPacketGroup = appendPacketGroup;`, context);
@@ -275,6 +275,37 @@ test('classifier confidence metadata covers representative strong, medium, and w
   for (const sample of samples) assertFixture(sample);
 });
 
+
+test('question-shaped docs surface is limited to issue-like documentation items', () => {
+  const prWithQuestionBody = classify(item({
+    repo: 'TanStack/query',
+    number: 10580,
+    type: 'pull request',
+    title: 'fix(vue-query): preserve discriminated union narrowing in UseBaseQueryReturnType',
+    body: 'Should we add a follow-up FAQ entry? Does this need documentation? Generated checklist: Any questions?',
+  }));
+  const docsPr = classify(item({
+    repo: 'example/repo',
+    number: 42,
+    type: 'pull request',
+    title: 'docs: clarify Env API docs based on feedback',
+    body: 'Should we mention the legacy behavior in the FAQ? Reviewer checklist includes questions.',
+  }));
+  const docsQuestionIssue = classify(item({
+    repo: 'eslint/eslint',
+    number: 43,
+    type: 'issue',
+    title: 'Question: is pnpm workspace mode supported?',
+    labels: ['documentation', 'question'],
+    body: 'The docs do not clearly say whether this is supported.',
+  }));
+
+  assert.ok(!secondarySignals(prWithQuestionBody).some((signal) => signal.startsWith('Question-shaped docs surface')));
+  assert.equal(docsPr.column, 'Docs Candidate');
+  assert.ok(!secondarySignals(docsPr).some((signal) => signal.startsWith('Question-shaped docs surface')));
+  assert.equal(docsQuestionIssue.column, 'Docs Candidate');
+  assert.ok(secondarySignals(docsQuestionIssue).some((signal) => signal.startsWith('Question-shaped docs surface')));
+});
 
 test('attention flags use CSP nonce hardening wording without changing classifier columns', () => {
   const cspPr = classify(item({
