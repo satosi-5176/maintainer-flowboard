@@ -43,14 +43,15 @@ const secondarySignals = loadBoardAttention();
 
 function loadBoardPacketRenderer() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
-  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'cspNonceHardeningRisk', 'securityDataRisk', 'apiKeyRisk', 'isPullRequestItem', 'secondarySignals', 'confidenceLabel', 'packetConfidence', 'packetEvidence', 'packetCaution', 'compactRoutineReadyPR', 'appendPacketGroup'];
+  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'cspNonceHardeningRisk', 'securityDataRisk', 'apiKeyRisk', 'isPullRequestItem', 'secondarySignals', 'confidenceLabel', 'packetConfidence', 'packetEvidence', 'packetCaution', 'reviewStatusLabel', 'itemReviewKey', 'localReviewFor', 'hasLocalReview', 'compactRoutineReadyPR', 'appendPacketGroup'];
   const context = { Date };
   vm.createContext(context);
-  vm.runInContext(`function daysOld(iso){return Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/86400000)}\nfunction classificationConfidenceMeta(){return {confidence:'medium',evidenceSummary:'Fallback packet metadata.',caution:''}}\n${names.map((name) => extractFunction(source, name)).join('\n')}\nthis.appendPacketGroup = appendPacketGroup;`, context);
-  return context.appendPacketGroup;
+  vm.runInContext(`const state = {repoName:'TanStack/query'}; let reviewNotes = {}; const $ = () => ({value:'TanStack/query'});\nfunction daysOld(iso){return Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/86400000)}\nfunction classificationConfidenceMeta(){return {confidence:'medium',evidenceSummary:'Fallback packet metadata.',caution:''}}\n${names.map((name) => extractFunction(source, name)).join('\n')}\nthis.appendPacketGroup = appendPacketGroup; this.setReviewNotes = (notes) => { reviewNotes = notes; };`, context);
+  return { appendPacketGroup: context.appendPacketGroup, setReviewNotes: context.setReviewNotes };
 }
 
-const appendPacketGroup = loadBoardPacketRenderer();
+const packetRenderer = loadBoardPacketRenderer();
+const appendPacketGroup = packetRenderer.appendPacketGroup;
 
 function packetItem(overrides) {
   return {
@@ -71,9 +72,15 @@ function packetItem(overrides) {
   };
 }
 
-function renderPacketGroupFor(itemUnderTest) {
+function reviewKeyFor(itemUnderTest) {
+  return `TanStack/query::${itemUnderTest.type === 'pr' ? 'pr' : 'issue'}::${itemUnderTest.number}`;
+}
+
+function renderPacketGroupFor(itemUnderTest, localReview) {
+  packetRenderer.setReviewNotes(localReview ? { [reviewKeyFor(itemUnderTest)]: localReview } : {});
   const lines = [];
   appendPacketGroup(lines, 'Test group', [itemUnderTest], 'No items found.');
+  packetRenderer.setReviewNotes({});
   return lines.join('\n');
 }
 
@@ -202,7 +209,8 @@ test('action packet clarifies classification confidence wording without bare con
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
   assert.match(source, /Classification confidence: \$/);
   assert.ok(source.includes('Classification confidence describes how strongly the item matched this review bucket. It is not a merge, close, release, or priority recommendation.'));
-  assert.ok(source.includes('Routine high-confidence ready PRs may be shown in a compact form. Items with medium/low confidence, cautions, or attention flags remain expanded.'));
+  assert.ok(source.includes('Routine high-confidence ready PRs may be shown in a compact form. Items with medium/low confidence, cautions, attention flags, or local review notes remain expanded.'));
+  assert.ok(source.includes('Local review notes are stored in this browser only and are not GitHub actions.'));
   assert.doesNotMatch(source, /- Confidence:/);
 });
 
@@ -215,6 +223,38 @@ test('action packet compacts normal high-confidence ready PRs without attention 
   assert.doesNotMatch(output, /Current column:/);
   assert.doesNotMatch(output, /Why surfaced:/);
   assert.doesNotMatch(output, /Maintainer check:/);
+});
+
+test('action packet includes local review status without changing classification metadata', () => {
+  const itemUnderTest = packetItem({ number: 129, title: 'Review noted PR', confidence: 'high' });
+  const output = renderPacketGroupFor(itemUnderTest, { status: 'reviewed', note: '', updatedAt: '2026-06-07T00:00:00Z' });
+
+  assert.match(output, /- PR #129: Review noted PR/);
+  assert.match(output, /Current column: Ready for Maintainer Review/);
+  assert.match(output, /Classification confidence: High/);
+  assert.match(output, /Local review status: Reviewed/);
+  assert.doesNotMatch(output, /Local note:/);
+  assert.doesNotMatch(output, /Ready review candidate · High classification confidence/);
+  assert.equal(itemUnderTest.column, 'Ready for Maintainer Review');
+  assert.equal(itemUnderTest.confidence, 'high');
+});
+
+test('action packet includes local review note and keeps compact routine PR expanded', () => {
+  const itemUnderTest = packetItem({ number: 130, title: 'Routine PR with local note' });
+  const output = renderPacketGroupFor(itemUnderTest, {
+    status: 'revisit',
+    note: 'Check CSP behavior before next release.',
+    updatedAt: '2026-06-07T00:00:00Z',
+  });
+
+  assert.match(output, /Current column: Ready for Maintainer Review/);
+  assert.match(output, /Classification confidence: High/);
+  assert.match(output, /Local review status: Revisit/);
+  assert.match(output, /Local note: Check CSP behavior before next release\./);
+  assert.match(output, /Why surfaced:/);
+  assert.doesNotMatch(output, /Ready review candidate · High classification confidence/);
+  assert.equal(itemUnderTest.column, 'Ready for Maintainer Review');
+  assert.equal(itemUnderTest.confidence, 'high');
 });
 
 test('action packet keeps ready PRs with secondary signals expanded', () => {
