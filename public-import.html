@@ -79,17 +79,17 @@ const feature=isIssue&&(/\b(feature request|proposal|request for feature|would l
 if(isPR){
 if(item.draft)return asResult("Waiting for Author Response","Pull request is draft and not ready for maintainer review.","Inspect what remains before the author marks it ready for review.");
 if(dependency)return asResult("Dependency / Bot Maintenance","Strong dependency or bot-maintenance signal detected in the title, labels, or author.","Inspect dependency update status and project bot policy.");
-if(prDocs)return asResult("Docs Candidate","Strong title, label, or changed-file signal indicates documentation-only work.","Inspect whether this is a docs gap, question, or docs-change candidate.");
+if(prDocs)return asResult("Docs Candidate","Strong title or label signal indicates documentation-related work.","Inspect whether this is a docs gap, question, or docs-change candidate.");
 if(releaseTitleLabel)return asResult("Tracking / Release Follow-up","Title or labels indicate release tracking or follow-up work.","Inspect release state, linked PRs, and remaining follow-up notes.");
 return asResult("Ready for Maintainer Review","Non-draft pull request is ready for maintainer review.","Inspect scope, test coverage, and risk before maintainer judgment.");
 }
 if(dependency)return asResult("Dependency / Bot Maintenance","Strong dependency or bot-maintenance signal detected in the title, labels, or author.","Inspect dependency update status and project bot policy.");
 if(releaseTitleLabel)return asResult("Tracking / Release Follow-up","Title or labels indicate release tracking or follow-up work.","Inspect release state, linked PRs, and remaining follow-up notes.");
+if(issueDocs)return asResult("Docs Candidate","Strong title or label signal indicates documentation-related work.","Inspect whether this is a docs gap, question, or docs-change candidate.");
 if(validationTask)return asResult("Ready for Maintainer Review","Validation or QA task detected.","Inspect validation scope, target repository, expected evidence, and recorded results.");
 if(bug&&missingRepro)return asResult("Needs Reproduction","Bug-like report says reproduction is missing or unreliable.",stale?"Inspect missing reproduction details and also check whether the age/relevance still justifies follow-up.":"Inspect what reproduction, environment, expected behavior, or actual behavior is missing.");
 if(bug&&hasRepro)return asResult("Ready for Maintainer Review","Issue appears to include bug-like wording and reproduction or actionability details.","Inspect reproduction, expected behavior, actual behavior, and affected scope.");
 if(bug)return asResult("Needs Reproduction","Bug-like report without clear reproduction details.",stale?"Inspect missing reproduction details and also check whether the age/relevance still justifies follow-up.":"Inspect what reproduction, environment, expected behavior, or actual behavior is missing.");
-if(issueDocs)return asResult("Docs Candidate","Strong issue title or label signal indicates documentation work.","Inspect whether this is a docs gap, question, or docs-change candidate.");
 if(feature)return asResult("Feature / Request","Strong feature request or enhancement signal detected.","Inspect whether this request fits project scope and maintenance cost.");
 if(stale)return asResult("Stale Candidate","No recent activity for 30+ days.","Inspect whether the item is still relevant before any further action.");
 return asResult("Unclassified","Imported from public GitHub and no strong rule matched.","Inspect manually and assign a category.");
