@@ -161,6 +161,14 @@ const fixtures = [
   { repo: 'eslint/eslint', number: 4, title: 'chore(deps): update dependency dashboard', type: 'pr', author: 'renovate[bot]', body: 'Dependency update.', expectedColumn: 'Dependency / Bot Maintenance' },
 ];
 
+
+test('action packet clarifies classification confidence wording without bare confidence label', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
+  assert.match(source, /Classification confidence: \$/);
+  assert.ok(source.includes('Classification confidence describes how strongly the item matched this review bucket. It is not a merge, close, release, or priority recommendation.'));
+  assert.doesNotMatch(source, /- Confidence:/);
+});
+
 test('cross-repo OSS classifier regression fixtures use conservative columns and facets', () => {
   for (const fixture of fixtures) assertFixture(fixture);
 });
