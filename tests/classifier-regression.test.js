@@ -69,6 +69,8 @@ function assertFixture(fixture) {
   if (fixture.actionIncludes) assert.match(result.nextAction, fixture.actionIncludes, fixture.title);
   if (fixture.reasonIncludes) assert.match(result.reason, fixture.reasonIncludes, fixture.title);
   if (fixture.actionIntent) assert.equal(result.actionIntent, fixture.actionIntent, fixture.title);
+  if (fixture.expectedConfidence) assert.equal(result.confidence, fixture.expectedConfidence, fixture.title);
+  if (fixture.evidenceIncludes) assert.match(result.evidenceSummary, fixture.evidenceIncludes, fixture.title);
 }
 
 const fixtures = [
@@ -157,6 +159,19 @@ const fixtures = [
 
 test('cross-repo OSS classifier regression fixtures use conservative columns and facets', () => {
   for (const fixture of fixtures) assertFixture(fixture);
+});
+
+
+test('classifier confidence metadata covers representative strong, medium, and weak signals', () => {
+  const samples = [
+    { title: 'docs: clarify cache invalidation guide', type: 'pr', expectedColumn: 'Docs Candidate', expectedConfidence: 'high', evidenceIncludes: /docs/i },
+    { title: 'Bug: cache observer stops responding', labels: ['bug'], body: 'Expected update, actual stale state. Steps included.', expectedColumn: 'Ready for Maintainer Review', expectedConfidence: 'high', evidenceIncludes: /Bug:.*labels include bug/ },
+    { title: 'Dependency Dashboard', labels: ['dependencies'], body: 'Aggregated dependency updates.', expectedColumn: 'Dependency / Bot Maintenance', expectedConfidence: 'high', evidenceIncludes: /Dependency Dashboard/ },
+    { title: 'Allow custom API shape for cache keys', body: 'It would help to support a different option shape.', expectedColumn: 'Feature / Request', expectedConfidence: 'medium', evidenceIncludes: /labels are absent/ },
+    { title: 'Google Maps embeds broken on tldraw.com due to expired API key', body: 'Expired API key breaks production embeds.', expectedColumn: 'Ready for Maintainer Review', expectedConfidence: 'high', unexpectedColumn: 'Feature / Request', evidenceIncludes: /API-key|operational/ },
+    { title: 'Question about something unclear', body: 'Not sure where this belongs.', expectedColumn: 'Unclassified', expectedConfidence: 'low', evidenceIncludes: /No strong/ },
+  ];
+  for (const sample of samples) assertFixture(sample);
 });
 
 test('attention flags ignore dependency dashboard body-only token and exposure noise', () => {
