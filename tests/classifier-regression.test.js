@@ -527,3 +527,23 @@ test('public importer classifier stays aligned with repository selector classifi
     if (fixture.expectedFacet) assert.ok(importedResult.facets?.includes(fixture.expectedFacet), fixture.title);
   }
 });
+
+function loadBoardColumnLayoutHelpers() {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext(`${extractFunction(source, 'columnClassName')}\n${extractFunction(source, 'emptyColumnState')}\nthis.columnClassName = columnClassName; this.emptyColumnState = emptyColumnState;`, context);
+  return context;
+}
+
+test('empty board columns use compact empty layout helpers', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
+  const { columnClassName, emptyColumnState } = loadBoardColumnLayoutHelpers();
+
+  assert.equal(columnClassName(false, 0), 'column empty');
+  assert.equal(columnClassName(true, 0), 'column collapsed empty');
+  assert.equal(columnClassName(false, 1), 'column');
+  assert.equal(emptyColumnState(), '<p class="empty-state">No items in this section.</p>');
+  assert.match(source, /\.column\.empty,\.column\.collapsed\{min-height:auto\}/);
+  assert.match(source, /\.empty-state\{margin:0;padding:2px 6px;/);
+});
