@@ -43,7 +43,7 @@ const secondarySignals = loadBoardAttention();
 
 function loadBoardPacketRenderer() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
-  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'cspNonceHardeningRisk', 'securityDataRisk', 'apiKeyRisk', 'isPullRequestItem', 'secondarySignals', 'confidenceLabel', 'packetConfidence', 'packetEvidence', 'packetCaution', 'reviewStatusLabel', 'itemReviewKey', 'localReviewFor', 'hasLocalReview', 'compactRoutineReadyPR', 'appendPacketGroup'];
+  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'cspNonceHardeningRisk', 'securityDataRisk', 'apiKeyRisk', 'isPullRequestItem', 'secondarySignals', 'confidenceLabel', 'packetConfidence', 'packetEvidence', 'packetCaution', 'normalizeReviewStatus', 'reviewStatusLabel', 'itemReviewKey', 'localReviewFor', 'hasLocalReview', 'compactRoutineReadyPR', 'appendPacketGroup'];
   const context = { Date };
   vm.createContext(context);
   vm.runInContext(`const state = {repoName:'TanStack/query'}; let reviewNotes = {}; const $ = () => ({value:'TanStack/query'});\nfunction daysOld(iso){return Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/86400000)}\nfunction classificationConfidenceMeta(){return {confidence:'medium',evidenceSummary:'Fallback packet metadata.',caution:''}}\n${names.map((name) => extractFunction(source, name)).join('\n')}\nthis.appendPacketGroup = appendPacketGroup; this.setReviewNotes = (notes) => { reviewNotes = notes; };`, context);
@@ -207,6 +207,8 @@ const fixtures = [
 
 test('action packet clarifies classification confidence wording without bare confidence label', () => {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
+  assert.ok(source.includes('REVIEW_NOTES_KEY="maintainerFlowboardReviewNotesV1"'));
+  assert.ok(source.includes('["unreviewed","reviewed","revisit","classification_wrong"]'));
   assert.match(source, /Classification confidence: \$/);
   assert.ok(source.includes('Classification confidence describes how strongly the item matched this review bucket. It is not a merge, close, release, or priority recommendation.'));
   assert.ok(source.includes('Routine high-confidence ready PRs may be shown in a compact form. Items with medium/low confidence, cautions, attention flags, or local review notes remain expanded.'));
