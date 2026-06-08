@@ -43,7 +43,7 @@ const secondarySignals = loadBoardAttention();
 
 function loadBoardPacketRenderer() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
-  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'cspNonceHardeningRisk', 'securityDataRisk', 'apiKeyRisk', 'isPullRequestItem', 'secondarySignals', 'confidenceLabel', 'packetConfidence', 'packetEvidence', 'packetCaution', 'compactRoutineReadyPR', 'appendPacketGroup'];
+  const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'cspNonceHardeningRisk', 'securityDataRisk', 'apiKeyRisk', 'isPullRequestItem', 'secondarySignals', 'confidenceLabel', 'packetConfidence', 'packetEvidence', 'packetCaution', 'currentRepoFullName', 'reviewItemKey', 'normalizeReviewState', 'reviewStateFor', 'reviewStatusLabel', 'hasLocalReview', 'compactRoutineReadyPR', 'appendPacketGroup'];
   const context = { Date };
   vm.createContext(context);
   vm.runInContext(`function daysOld(iso){return Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/86400000)}\nfunction classificationConfidenceMeta(){return {confidence:'medium',evidenceSummary:'Fallback packet metadata.',caution:''}}\n${names.map((name) => extractFunction(source, name)).join('\n')}\nthis.appendPacketGroup = appendPacketGroup;`, context);
@@ -207,6 +207,18 @@ test('action packet clarifies classification confidence wording without bare con
 });
 
 
+
+test('board defines local review notes storage and required local-only UI wording', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
+
+  assert.ok(source.includes('maintainerFlowboardReviewNotesV1'));
+  assert.ok(source.includes('Review status'));
+  assert.ok(source.includes('Save local note'));
+  assert.ok(source.includes('Clear local note'));
+  assert.ok(source.includes('Local note'));
+  assert.ok(source.includes('Local review notes are stored in this browser only and are not GitHub actions.'));
+});
+
 test('action packet compacts normal high-confidence ready PRs without attention flags', () => {
   const output = renderPacketGroupFor(packetItem({ number: 123, title: 'Example title' }));
   assert.match(output, /- PR #123: Example title/);
@@ -256,6 +268,46 @@ test('action packet keeps docs, dependency, and release follow-up items expanded
     assert.match(output, /Maintainer check:/);
     assert.doesNotMatch(output, /Ready review candidate · High classification confidence/);
   }
+});
+
+
+test('action packet keeps ready PR with local review status expanded', () => {
+  const output = renderPacketGroupFor(packetItem({
+    number: 129,
+    title: 'Routine local status example',
+    localReview: { status: 'revisit', note: '', updatedAt: '2026-06-07T00:00:00Z' },
+  }));
+
+  assert.match(output, /Current column: Ready for Maintainer Review/);
+  assert.match(output, /Local review status: Revisit/);
+  assert.doesNotMatch(output, /Ready review candidate · High classification confidence/);
+});
+
+test('action packet includes local note and expands compact routine PRs', () => {
+  const output = renderPacketGroupFor(packetItem({
+    number: 130,
+    title: 'fix: routine patch with local note',
+    localReview: { status: 'unreviewed', note: 'Check CSP behavior before next release.', updatedAt: '2026-06-07T00:00:00Z' },
+  }));
+
+  assert.match(output, /Current column: Ready for Maintainer Review/);
+  assert.match(output, /Local note: Check CSP behavior before next release\./);
+  assert.doesNotMatch(output, /Ready review candidate · High classification confidence/);
+});
+
+test('local review notes do not change packet column or confidence', () => {
+  const output = renderPacketGroupFor(packetItem({
+    number: 131,
+    title: 'fix: preserve classification metadata',
+    column: 'Ready for Maintainer Review',
+    confidence: 'high',
+    localReview: { status: 'classification_wrong', note: 'This should be docs follow-up.', updatedAt: '2026-06-07T00:00:00Z' },
+  }));
+
+  assert.match(output, /Current column: Ready for Maintainer Review/);
+  assert.match(output, /Classification confidence: High/);
+  assert.match(output, /Local review status: Classification wrong/);
+  assert.match(output, /Local note: This should be docs follow-up\./);
 });
 
 test('cross-repo OSS classifier regression fixtures use conservative columns and facets', () => {
