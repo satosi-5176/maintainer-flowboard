@@ -41,6 +41,25 @@ function loadBoardAttention() {
 
 const secondarySignals = loadBoardAttention();
 
+
+function loadPublicImportHelpers() {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'public-import.html'), 'utf8');
+  const messages = source.match(/const IMPORT_MESSAGES=\{[^;]+\};/)?.[0];
+  if (!messages) throw new Error('Could not extract public import messages');
+  const context = { fetch: async () => { throw new TypeError('network unavailable'); } };
+  vm.createContext(context);
+  vm.runInContext(`${messages}
+${extractFunction(source, 'parseRepo')}
+${extractFunction(source, 'importErrorMessage')}
+${extractFunction(source, 'fetchPage').replace(/^function/, 'async function')}
+this.parseRepo = parseRepo;
+this.importErrorMessage = importErrorMessage;
+this.fetchPage = fetchPage;`, context);
+  return context;
+}
+
+const publicImport = loadPublicImportHelpers();
+
 function loadBoardPacketRenderer() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
   const names = ['attentionSignalText', 'attentionTitleLabelText', 'dependencyMaintenance', 'dependencySecurityRisk', 'dashboardAggregate', 'ciTokenPermissionHardening', 'cspNonceHardeningRisk', 'securityDataRisk', 'apiKeyRisk', 'isPullRequestItem', 'secondarySignals', 'confidenceLabel', 'packetConfidence', 'packetEvidence', 'packetCaution', 'normalizeReviewStatus', 'reviewStatusLabel', 'itemReviewKey', 'localReviewFor', 'hasLocalReview', 'compactRoutineReadyPR', 'appendPacketGroup'];
@@ -204,6 +223,30 @@ const fixtures = [
   { repo: 'eslint/eslint', number: 4, title: 'chore(deps): update dependency dashboard', type: 'pr', author: 'renovate[bot]', body: 'Dependency update.', expectedColumn: 'Dependency / Bot Maintenance' },
 ];
 
+
+
+test('public GitHub import validates owner/repo input with friendly guidance', () => {
+  assert.equal(publicImport.parseRepo('TanStack/query').full, 'TanStack/query');
+  assert.throws(() => publicImport.parseRepo('TanStack'), /Enter a public GitHub repository in owner\/repo format\./);
+  assert.throws(() => publicImport.parseRepo('not a repo'), /Enter a public GitHub repository in owner\/repo format\./);
+});
+
+test('public GitHub import maps 404 responses to not-found public access guidance', () => {
+  const message = publicImport.importErrorMessage({ status: 404, headers: { get: () => null } }, '{"message":"Not Found"}');
+  assert.equal(message, 'Repository not found or not publicly accessible. Check the owner/repo name and confirm the repository is public.');
+});
+
+test('public GitHub import maps 403 rate limits to retry guidance without token prompts', () => {
+  const message = publicImport.importErrorMessage({ status: 403, headers: { get: (name) => name === 'x-ratelimit-remaining' ? '0' : null } }, '{"message":"API rate limit exceeded"}');
+  assert.equal(message, 'GitHub public API rate limit reached. Wait and try again later, or use a smaller test repository.');
+});
+
+test('public GitHub import maps network failure and empty results to friendly messages', async () => {
+  await assert.rejects(() => publicImport.fetchPage('https://api.github.com/repos/example/repo/issues'), /Network error while importing public GitHub data\. Check your connection and try again\./);
+  const source = fs.readFileSync(path.join(__dirname, '..', 'public-import.html'), 'utf8');
+  assert.ok(source.includes('Import succeeded, but no open issues or pull requests were found.'));
+  assert.ok(source.includes('aria-live="polite"'));
+});
 
 test('action packet clarifies classification confidence wording without bare confidence label', () => {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
@@ -530,7 +573,7 @@ test('public importer classifier stays aligned with repository selector classifi
 
 function loadBoardColumnLayoutHelpers() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
-  const context = {};
+  const context = { fetch: async () => { throw new TypeError('network unavailable'); } };
   vm.createContext(context);
   vm.runInContext(`${extractFunction(source, 'columnClassName')}\n${extractFunction(source, 'emptyColumnState')}\nthis.columnClassName = columnClassName; this.emptyColumnState = emptyColumnState;`, context);
   return context;
