@@ -60,7 +60,7 @@ Classification is transparent and rule-based. It is a triage aid, not a source o
 6. Generate a Maintainer Action Packet Markdown export.
 7. Copy the export into notes, a maintainer handoff, ChatGPT/Codex, or another external review document.
 
-Use public GitHub repository import as the primary workflow. Example repository quick imports are available from the public import screen for a fast walkthrough.
+Use public GitHub repository import from the main board as the primary workflow. Example repository quick imports are available on the board for a fast walkthrough, and imported cards appear immediately without a separate save step.
 
 ## What it is good for
 

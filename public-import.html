@@ -3,190 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Maintainer Flowboard — Public GitHub Import</title>
+  <meta http-equiv="refresh" content="4; url=./board.html#publicImportPanel">
+  <title>Maintainer Flowboard — Public import moved</title>
   <style>
-    :root{--bg:#f6f8fb;--card:#fff;--ink:#102033;--muted:#64748b;--line:rgba(16,32,51,.12);--blue:#2563eb;--blueSoft:#dbeafe;--warn:#fef3c7;--shadow:0 10px 30px rgba(15,23,42,.08);--successBg:#dcfce7;--successInk:#166534;--errorBg:#fee2e2;--errorInk:#991b1b;--loadingBg:#eff6ff;--loadingInk:#1e40af}
-    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{max-width:980px;margin:0 auto;padding:20px;display:grid;gap:16px}.card{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;display:grid;gap:12px}.eyebrow{display:inline-flex;width:max-content;padding:7px 10px;border-radius:999px;background:var(--blueSoft);color:#1e3a8a;font-size:13px;font-weight:850}h1{margin:0;font-size:clamp(32px,5vw,52px);line-height:1.03;letter-spacing:-.04em}p{margin:0;color:var(--muted);line-height:1.55}label{font-weight:850;font-size:13px;color:var(--muted)}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff;color:var(--ink);font:inherit}textarea{min-height:240px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.row{display:grid;grid-template-columns:minmax(0,1fr) 160px;gap:10px}.actions{display:flex;flex-wrap:wrap;gap:10px}.btn{min-height:42px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:0 14px;font-weight:850;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:inherit;text-decoration:none}.primary{background:var(--blue);color:white;border-color:transparent}.warn{background:var(--warn);color:#78350f}.status{padding:12px;border:1px solid var(--line);border-radius:12px;background:#f8fafc;white-space:pre-wrap;color:var(--muted)}.status.loading{background:var(--loadingBg);color:var(--loadingInk)}.status.success{background:var(--successBg);color:var(--successInk)}.status.warning{background:var(--warn);color:#78350f}.status.error{background:var(--errorBg);color:var(--errorInk)}.small{font-size:13px}.example-imports{display:flex;flex-wrap:wrap;align-items:center;gap:6px;color:var(--muted)}.example-imports span{font-size:13px;font-weight:850}.example-imports .btn{min-height:30px;border-radius:9px;padding:0 10px;font-size:12px}.danger{color:#991b1b}.ok{color:#166534}@media(max-width:720px){.app{padding:14px}.row{grid-template-columns:1fr}.actions{display:grid}.btn{width:100%}}
+    :root{--bg:#f6f8fb;--card:#fff;--ink:#102033;--muted:#64748b;--line:rgba(16,32,51,.12);--blue:#2563eb;--blueSoft:#dbeafe;--shadow:0 10px 30px rgba(15,23,42,.08)}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.app{min-height:100vh;max-width:760px;margin:0 auto;padding:20px;display:grid;place-items:center}.card{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:24px;display:grid;gap:14px}.eyebrow{display:inline-flex;width:max-content;padding:7px 10px;border-radius:999px;background:var(--blueSoft);color:#1e3a8a;font-size:13px;font-weight:850}h1{margin:0;font-size:clamp(30px,5vw,48px);line-height:1.04;letter-spacing:-.04em}p{margin:0;color:var(--muted);line-height:1.55}.btn{min-height:42px;border:1px solid transparent;border-radius:12px;background:var(--blue);padding:0 14px;font-weight:850;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:#fff;text-decoration:none;width:max-content}
   </style>
 </head>
 <body>
   <main class="app">
-    <section class="card">
+    <section class="card" aria-labelledby="movedTitle">
       <div class="eyebrow">Public GitHub import</div>
-      <h1>Import public issues and PRs</h1>
-      <p>This helper fetches public GitHub issues and pull requests, stores them in the same local board data used by Maintainer Flowboard, then lets you return to the board. It does not use a token, does not write to GitHub, and only works for public repositories.</p>
-    </section>
-
-    <section class="card">
-      <label for="repoInput">Repository</label>
-      <div class="row">
-        <input id="repoInput" placeholder="owner/repo" autocomplete="off">
-        <select id="limitInput" aria-label="Import limit">
-          <option value="30">30 items</option>
-          <option value="50" selected>50 items</option>
-          <option value="100">100 items</option>
-        </select>
-      </div>
-      <div class="actions">
-        <button class="btn primary" id="fetchButton" type="button">Fetch public items</button>
-        <button class="btn" id="saveButton" type="button" disabled>Save to board</button>
-        <a class="btn" href="./board.html">Back to board</a>
-      </div>
-      <div class="example-imports" aria-label="Example public repositories">
-        <span>Try an example:</span>
-        <button class="btn" type="button" data-example-repo="TanStack/query" aria-label="Import example repository TanStack/query">TanStack/query</button>
-        <button class="btn" type="button" data-example-repo="tldraw/tldraw" aria-label="Import example repository tldraw/tldraw">tldraw/tldraw</button>
-        <button class="btn" type="button" data-example-repo="vitejs/vite" aria-label="Import example repository vitejs/vite">vitejs/vite</button>
-        <button class="btn" type="button" data-example-repo="eslint/eslint" aria-label="Import example repository eslint/eslint">eslint/eslint</button>
-      </div>
-      <div id="status" class="status" role="status" aria-live="polite">Enter a public repository such as owner/repo, then fetch.</div>
-      <p class="small">GitHub unauthenticated API rate limits can apply. If fetching fails, wait and try again later.</p>
-    </section>
-
-    <section class="card">
-      <label for="previewOutput">Fetched JSON preview</label>
-      <textarea id="previewOutput" readonly placeholder="Fetched items will appear here."></textarea>
+      <h1 id="movedTitle">Public GitHub import now lives on the main board.</h1>
+      <p>The old helper workflow has been retired. Use the main board to import public issues and pull requests in one step.</p>
+      <p>You will be redirected shortly.</p>
+      <a class="btn" href="./board.html#publicImportPanel">Go to the main board import</a>
     </section>
   </main>
-<script>
-const STORE_KEY="maintainer-flowboard-v0.1";
-let importedItems=[];
-let importedRepoFull="";
-const $=id=>document.getElementById(id);
-const low=value=>String(value||"").toLowerCase();
-const IMPORT_MESSAGES={invalidRepo:"Enter a public GitHub repository in owner/repo format.",notFound:"Repository not found or not publicly accessible. Check the owner/repo name and confirm the repository is public.",rateLimit:"GitHub public API request was blocked or rate-limited. Wait and try again later.",network:"Network error while importing public GitHub data. Check your connection and try again.",empty:"Import succeeded, but no open issues or pull requests were found."};
-const STATUS_LABELS={loading:"Loading",success:"Success",warning:"Warning",error:"Error"};
-function setStatus(message,kind){const target=$("status"),label=STATUS_LABELS[kind];target.textContent=label?`${label}: ${message}`:message;target.className="status"+(kind?` ${kind}`:"");target.setAttribute("aria-live",kind==="error"?"assertive":"polite")}
-function parseRepo(value){const trimmed=String(value||"").trim().replace(/^https:\/\/github\.com\//,"").replace(/\.git$/,"").replace(/\/$/,"");const parts=trimmed.split("/").filter(Boolean);const validPart=/^[A-Za-z0-9_.-]+$/;if(parts.length!==2||!validPart.test(parts[0])||!validPart.test(parts[1]))throw new Error(IMPORT_MESSAGES.invalidRepo);return{owner:parts[0],repo:parts[1],full:`${parts[0]}/${parts[1]}`}}
-function labelsOf(labels){return Array.isArray(labels)?labels.map(label=>typeof label==="string"?label:label?.name).filter(Boolean):[]}
-function daysOld(iso){return Math.floor((Date.now()-new Date(iso||Date.now()).getTime())/86400000)}
-function classifyImportedItem(item){
-const title=(item.title||"").toLowerCase(),body=(item.body||"").toLowerCase(),labels=item.labels||[],labelText=labels.join(" ").toLowerCase(),author=(item.author||"").toLowerCase(),githubType=String(item.githubType||item.github_type||item.issueType||item.typeName||"").toLowerCase(),baseBranch=String(item.baseBranch||item.base?.ref||"").toLowerCase(),titleLabels=[title,labelText,githubType].join(" "),stale=daysOld(item.updatedAt)>=30;
-const isPR=item.type==="pr",isIssue=item.type==="issue";
-const linkedOpenPRs=Array.isArray(item.linkedPullRequests)?item.linkedPullRequests.filter(pr=>String(pr?.state||"open").toLowerCase()==="open"):Array.isArray(item.linkedPRs)?item.linkedPRs.filter(pr=>String(pr?.state||"open").toLowerCase()==="open"):[];
-const asResult=(column,reason,nextAction,facets=[])=>{const mergedFacets=[...(Array.isArray(item.facets)?item.facets:[]),...facets].filter((facet,index,array)=>facet&&array.indexOf(facet)===index);let action=nextAction;if(isIssue&&linkedOpenPRs.length){action=`Candidate PR exists (${linkedOpenPRs.map(pr=>`#${pr.number||pr}`).join(", ")}); review and verify the linked PR before considering fresh implementation.`;mergedFacets.push("linked_open_pr_review")}const confidenceMeta=classifierConfidenceMeta(column,reason,mergedFacets);return{...item,column,reason,nextAction:action,facets:mergedFacets,confidence:confidenceMeta.confidence,evidenceSummary:confidenceMeta.evidenceSummary,caution:confidenceMeta.caution,actionIntent:mergedFacets.includes("linked_open_pr_review")?"review_validate_linked_pr":undefined}};
-const files=Array.isArray(item.files)?item.files.map(file=>String(typeof file==="string"?file:file?.filename||file?.path||"").toLowerCase()).filter(Boolean):[];
-const labelsInclude=pattern=>labels.some(label=>pattern.test(String(label).toLowerCase()));
-const titleStartsDocs=/^(?:docs|documentation)(?:\b|\(|:)/.test(title);
-const docsLabel=labelsInclude(/^(docs?|documentation)$/);
-const docsOnlyFiles=files.length>0&&files.every(file=>/(^|\/)(docs?|documentation|guides?|examples?)\//.test(file)||/\.mdx?$/.test(file)||/(^|\/)readme(?:\.[^/]*)?$/.test(file));
-const docsScope=/^(?:fix|feat|refactor|perf|test)\((?:docs?|documentation|readme|jsdoc)\)/.test(title);
-const trackingPlanning=isIssue&&(/\[(?:tracking|meta)\]|^tracking\b|\b(?:roadmap|project tracking|meta issue|multi-area|planning)\b/.test(title)||/\b(?:tracking|roadmap|project|meta)\b/.test(githubType));
-const docsTitle=titleStartsDocs||docsScope||/\breadme\b/.test(title)||/\b(?:documentation|docs|jsdoc)(?:[- ]?only| only| update| changes?| fix| improvement| typo| cleanup| examples?)\b/.test(title)||/\b(?:update|fix|improve|add|correct|clarify)\b.*\b(?:documentation|docs|jsdoc|readme|guide|troubleshooting)\b/.test(title);
-const docsStrong=docsLabel||docsOnlyFiles||docsTitle||githubType==="documentation";
-const implementationTitle=/^(?:fix|feat|refactor|perf|test)(?:\b|\(|:)/.test(title);
-const prDocs=docsStrong&&(!implementationTitle||docsLabel||docsOnlyFiles||titleStartsDocs||docsScope||/\breadme\b/.test(title)||/\b(?:docs?|documentation|jsdoc)[- ]?only\b/.test(title));
-const dependencyTitle=/^chore\(deps\)/.test(title)||/\b(dependency dashboard|lock file maintenance|renovate|dependabot)\b/.test(title);
-const dependencyLabel=labelsInclude(/\b(dependencies?|dependency|renovate|dependabot)\b/);
-const dependencyBotAuthor=/\b(renovate|dependabot)\b/.test(author);
-const automationBotAuthor=/\[bot\]$/.test(author)||/(^|[-_])bot$/.test(author)||/github-actions/.test(author);
-const ciMaintenance=/^(?:ci|chore)(?:\b|\(|:)/.test(title)||/\b(actions\/checkout|actions\/setup-node|branch sync|merge main into next|test-only|fixture cleanup|adds coverage)\b/.test(titleLabels);
-const testOnly=/^(?:test)(?:\b|\(|:)/.test(title)||/\b(?:test-only|fixture cleanup|adds coverage)\b/.test(titleLabels);
-const dependency=dependencyTitle||dependencyLabel||dependencyBotAuthor;
-const releaseAutomation=isPR&&(/^(?:release:|\[ci\] release\b)/.test(title)||(/\brelease\b/.test(title)&&automationBotAuthor)||/changesets release/.test(body));
-const branchSync=isPR&&(/merge main into next/.test(title)||/branch sync/.test(titleLabels)||baseBranch==="next"&&/merge/.test(title));
-const releaseTitleLabel=/\b(release|changelog|migration|breaking|deprecat(?:e|ion|ed)|post-release|pre-release|prerelease)\b/.test(titleLabels)&&!/^mark .*deprecated/.test(title);
-const workflowIssue=isIssue&&/^\[aw\]/.test(title)&&labelsInclude(/agentic-workflows|build/);
-const validationTask=isIssue&&/\b(validate|validation|qa|smoke test|manual test|real oss repository|test plan)\b/.test([title,body,labelText].join(" "));
-const bugText=[title,body].join(" ");
-const humanText=[title,body,labelText,githubType].join(" ");
-const featureText=[title,body,labelText,githubType].join(" ");
-const regressionSignal=/\b(regression|broke|broken after|no longer|introduced in|removed by|restore\b|stopped working|passes? in [^\n]{0,35}fails? in|from\s+v?\d[^\n]{0,25}\bto\s+v?\d|\d+\.\d+\.\d+\s*(?:→|->|to)\s*\d+\.\d+\.\d+)\b/.test(humanText);
-const privacySignal=isIssue&&/\b(telemetry|gdpr|consent|illegal collection|illegal data collection|privacy|data collection)\b/.test(humanText);
-const securityHardening=/\b(oss-fuzz|actionlint|ghalint|zizmor|pinact|disable yarn lifecycle|lifecycle scripts|supply-chain|hardening|harden\b|require sessionid|pin actions)\b/.test(humanText);
-const dependencySecurityUpdate=dependency&&/(?:\[security\]|\b(?:security update|vulnerabilit(?:y|ies)|cve-?\d{4}-?\d+|advisory|advisories)\b)/.test(titleLabels);
-const authStandards=/\b(www-authenticate|realm|auth middleware|standards? compliance)\b/.test(humanText);
-const apiDocsContract=isIssue&&/\b(type does not match (?:the )?docs|docs say|copied from docs|documentation mismatch|contract mismatch)\b/.test(humanText);
-const internalImprovementSignal=/^(?:pass|centralize)\b/.test(title)||(/^use\b/.test(title)&&/\b(?:schema change hooks|avoid full resets|operational|architecture|reliability|data-risk|api shape|ergonomics|refactor proposal|performance improvement)\b/.test(featureText))||/\b(?:pass common|centralize|per-shape|subscriptions|reduce subscriptions|shape culling|schema change hooks|avoid full resets|api shape|architecture|internal improvement|ergonomics|refactor proposal|performance improvement)\b/.test(featureText);
-const strongFeatureTitle=/^(?:\[feature\]|feature request|add|support|make|expand|proposal|mark .*deprecated|drop .* and set min|feat(?:\b|\(|:))/.test(title)||/^ability to\b/.test(title)||/^make\b.*\b(?:easier to customi[sz]e|customi[sz]e|configurable|option|api|read)\b/.test(title)||/\b(?:add option|option for|option to|add support|support for|easier to customi[sz]e|customi[sz]e|configurable|expose|api shape|api|modifier|shortcut|border style|indentation|waitforsync|add [^\n.]{0,60} method|cannot distinguish config shape|language support|so the cursor is visible)\b/.test(titleLabels)||/\bsupport\b.+/.test(titleLabels);
-const capabilityFeatureSignal=/\b(?:ability to|support appending|inside of a shadow-root|shadow-root|shadow dom|style\/script elements|capability)\b/.test(featureText)||/\ballow\b[^.\n]{0,80}\binside\b/.test(featureText);
-const feature=isIssue&&(strongFeatureTitle||capabilityFeatureSignal||internalImprovementSignal||/\b(feature request|proposal|request for feature|would like to add)\b/.test(featureText)||labelsInclude(/^enhancement$/))&&!/\b(?:not|is not|isn't) (?:a )?feature request\b/.test([title,body].join(" "));
-const browserLifecycleIssue=isIssue&&/\b(?:bfcache|pagehide|pageshow|hmr websocket|disconnect|browser lifecycle|compatibility|dev server lifecycle|stale connection|reconnect)\b/.test(bugText);
-const operationalArchitectureIssue=isIssue&&!docsStrong&&(trackingPlanning||/\b(?:schema change hooks|avoid full resets|supabase ddl|ddl changes?|operational|reliability|data-risk)\b/.test(featureText)||browserLifecycleIssue);
-const directSecurityDataRisk=isIssue&&/\b(data exposure|public schema|rls disabled|lock down|access exposure)\b/.test(bugText);
-const directApiKeyRisk=isIssue&&/\b(?:api[- ]key|expired api[- ]key)\b/.test(bugText);
-const operationalBug=isIssue&&(/\b(broken|expired api[- ]key|lock down|rls disabled|public schema|data exposure|api[- ]key|access exposure)\b/.test(bugText)||directSecurityDataRisk||directApiKeyRisk);
-const environmentFacet=/\b(?:parallels|wsl|bun|pnpm v?\d+|turbopack|chromium|safari|ios|node \d+|node adapter|cloudflare|chrome headless|shadow dom|css zoom|browser mode|adapter|workspace root|symlink|websocket)\b/.test(humanText);
-const performanceSignal=/\b(perf(?:ormance)?|slow|benchmark|ram exhaustion|resource exhaustion|build time|overhead|hmr)\b/.test(humanText);
-const accessibilitySignal=/\b(a11y|accessibility|axe violation|screen reader|voice control|focusmanager|tablist)\b/.test(humanText);
-const bugTitle=/^bug:/.test(title),bugLabel=labelsInclude(/^bug$/)&&!/^(?:\[feature\]|feature request)/.test(title),strongBugTitleLabel=bugTitle||bugLabel;
-const actionableBug=isIssue&&(operationalBug||bugTitle||/\b(stops responding|not invoked|does not|doesn't|should not|unexpectedly|wrong|not cleared|not cleaned up|covers text|floats outside|fails?|failed|failing|crash(?:es|ed|ing)?|exception|hangs?|not working|misdetected|stalls?|zombie processes)\b/.test(bugText));
-const bug=isIssue&&(actionableBug||strongBugTitleLabel||regressionSignal||(!strongFeatureTitle&&!docsStrong&&/\b(bug|error|pending unexpectedly|stuck|expected|actual|reproduction|reproduce|steps|playground|unstable|incorrect|unexpected)\b/.test(bugText)));
-const hasRunnableRepro=/\b(stackblitz|codesandbox|github(?:\.com)?\/[^\s]+\/[^\s]+|minimal repro|reproduction repo)\b/.test(bugText)&&!/\bno codesandbox\b/.test(bugText);
-const hasInlineRepro=/\b(input|output|expected|actual|reproduce|reproduction|steps|code sample|```|device|browser|ios safari)\b|expected output/.test(bugText);
-const hasRepro=hasRunnableRepro||hasInlineRepro;
-const missingRepro=/\b(cannot reproduce|can't reproduce|cant reproduce|could not reproduce|placeholder steps|hard to provide|no minimal reproduction|no reproduction|no repro|no reduced test case|no test case|no reliable steps|do not have reliable steps|don't have reliable steps|without (?:a )?(?:minimal |reduced )?(?:reproduction|repro|test case))\b/i.test(bugText)||labelsInclude(/needs? repro/)&&!hasRepro;
-const docsOrientedJSDoc=/\bjsdoc\b/.test(title)&&/\b(?:docs?|documentation|type definition|hook jsdoc|reference|guide)\b/.test(titleLabels);
-const issueDocs=!trackingPlanning&&!/\b(?:exception|error|fails?|crash(?:es|ed|ing)?|not working)\b/.test(title)&&(docsLabel||titleStartsDocs||githubType==="documentation"||docsOrientedJSDoc||/\b(?:documentation|docs|jsdoc|readme|guide|troubleshooting)\b/.test(title));
-const commonFacets=[regressionSignal&&"regression_release_migration",environmentFacet&&"environment_specific",performanceSignal&&"performance",accessibilitySignal&&"accessibility",directSecurityDataRisk&&"security_data_exposure",directApiKeyRisk&&"api_key_operational"].filter(Boolean);
-const classifierConfidenceMeta=(column,reason,facets=[])=>{
-let confidence="medium",evidenceSummary=reason,caution="";
-const noLabels=!labels.length;
-if(column==="Unclassified"){confidence="low";evidenceSummary="No strong title, label, GitHub type, or state signal matched.";caution="Manual classification needed; weak or competing evidence may be present."}
-else if(isIssue&&bugTitle&&bugLabel){confidence="high";evidenceSummary="Issue title starts with Bug: and labels include bug."}
-else if(dependencyTitle||dependencyLabel||dependencyBotAuthor){confidence="high";evidenceSummary=dependencyTitle&&/dependency dashboard/.test(title)?"Title identifies a Dependency Dashboard; dependency metadata supports bot-maintenance routing.":"Title, label, or bot author gives a strong dependency-maintenance signal."}
-else if((isPR&&prDocs||issueDocs)&&(titleStartsDocs||docsLabel||docsOnlyFiles||githubType==="documentation")){confidence="high";evidenceSummary=titleStartsDocs?"Title starts with docs, a strong documentation signal.":docsOnlyFiles?"Changed files are docs-only, a strong documentation signal.":"Title, label, or GitHub Type gives a strong documentation signal."}
-else if(releaseAutomation||releaseTitleLabel||trackingPlanning){confidence="high";evidenceSummary="Title, GitHub Type, or automation wording gives a strong tracking/release signal."}
-else if(item.draft){confidence="high";evidenceSummary="GitHub draft state marks the pull request as not ready for review."}
-else if(workflowIssue){confidence="high";evidenceSummary="Issue title and labels indicate automation or build workflow maintenance."}
-else if(isIssue&&(directSecurityDataRisk||directApiKeyRisk||privacySignal)){confidence="high";evidenceSummary="Issue title/body contains direct security, API-key, privacy, or operational risk wording."}
-else if(column==="Ready for Maintainer Review"&&isPR&&!item.draft){confidence="high";evidenceSummary="GitHub PR state is non-draft; no stronger maintenance, docs, or release rule matched."}
-else if(column==="Ready for Maintainer Review"&&(bugTitle||bugLabel||actionableBug||bug&&hasRepro)){confidence=bugTitle||bugLabel?"high":"medium";evidenceSummary=bugTitle||bugLabel?"Bug title or label gives a strong review-ready issue signal.":"Title/body contains actionable bug wording with available evidence.";if(confidence==="medium")caution="Confirm reproduction quality and affected scope before acting."}
-else if(column==="Needs Reproduction"){confidence=missingRepro?"medium":"low";evidenceSummary=missingRepro?"Bug-like wording is present, but reproduction signals are missing or unreliable.":"Bug-like wording is present without clear reproduction details.";caution="Confirm what evidence is missing before requesting more information."}
-else if(column==="Feature / Request"){confidence=labelsInclude(/^enhancement$/)?"high":"medium";evidenceSummary=noLabels?"Title or body suggests an API-shape, product, or capability request, but labels are absent.":"Title, body, or labels suggest feature/request scope.";if(confidence!=="high")caution="Confirm project scope and maintenance cost before treating this as a request."}
-else if(column==="Stale Candidate"){confidence="medium";evidenceSummary="Age signal indicates no recent activity for 30+ days.";caution="Check current relevance before using age as review context."}
-if(!caution&&confidence==="medium"&&(facets.includes("security_sensitive_enhancement")||facets.includes("security_hardening")))caution="Security-related wording is plausible but severity or incident evidence is unclear.";
-return{confidence,evidenceSummary,caution};
-};
-if(isPR){
-if(item.draft)return asResult("Waiting for Author Response","Pull request is draft and not ready for maintainer review.","Inspect what remains before the author marks it ready for review.",["draft_not_ready"]);
-if(/\b(?:wip|poc|proof of concept|draft|blocked|backlog|roadmap[- ]held|roadmap hold|abandoned|no current merge plan|for v5)\b/.test(titleLabels))return asResult("Stale Candidate","Pull request is marked WIP, PoC, backlog, or roadmap-held rather than ready for merge.","Inspect whether the PR still has a current merge plan before deeper review.",["wip_backlog_hold"]);
-if(releaseAutomation)return asResult("Tracking / Release Follow-up","Pull request is release automation or prerelease preparation, not ordinary code review.",/\b(blocked|failing|release-blocking)\b/.test(body)?"Inspect release-blocking discussion, checks, and maintainer QA checklist.":"Inspect release state, generated changes, and maintainer QA checklist.",["release_automation",/\b(blocked|failing|release-blocking)\b/.test(body)&&"release_blocked"].filter(Boolean));
-if(branchSync)return asResult("Dependency / Bot Maintenance","Pull request is branch-sync maintenance; included commit text should not drive product classification.","Inspect branch sync conflicts, checks, and target branch policy.",["branch_sync"]);
-if(dependency)return asResult("Dependency / Bot Maintenance","Strong dependency or dependency-bot maintenance signal detected in the title, labels, or author.","Inspect dependency update status and project bot policy.",[dependencySecurityUpdate&&"dependency_security_update",securityHardening&&"security_hardening"].filter(Boolean));
-if(ciMaintenance||testOnly)return asResult("Dependency / Bot Maintenance",testOnly?"Pull request is test-only or fixture-maintenance work.":"Pull request is CI, chore, or infrastructure maintenance.","Inspect test intent, CI status, and maintenance risk before maintainer judgment.",[testOnly?"test_only_maintenance":"ci_infra_maintenance",securityHardening&&"security_hardening"].filter(Boolean));
-if(prDocs)return asResult("Docs Candidate","Strong title or label signal indicates documentation-related work.","Inspect whether this is a docs gap, question, or docs-change candidate.",["docs_review"]);
-if(releaseTitleLabel)return asResult("Tracking / Release Follow-up","Title or labels indicate release tracking or follow-up work.","Inspect release state, linked PRs, and remaining follow-up notes.",["release_follow_up"]);
-return asResult("Ready for Maintainer Review","Non-draft pull request is ready for maintainer review.","Inspect scope, test coverage, CI, linked issue verification, and risk before maintainer judgment.",[...commonFacets,securityHardening&&"security_hardening",authStandards&&"security_sensitive_enhancement",labelsInclude(/maybe automated/)&&"ai_disclosure_review"].filter(Boolean));
-}
-if(workflowIssue)return asResult("Dependency / Bot Maintenance","Automation-authored workflow/build infrastructure issue detected.","Inspect workflow logs and build-infra ownership before treating it as a user-facing bug.",["internal_workflow_failure","bot_generated"]);
-if(dependency)return asResult("Dependency / Bot Maintenance","Strong dependency or dependency-bot maintenance signal detected in the title, labels, or author.","Inspect dependency update status and project bot policy.");
-if(trackingPlanning)return asResult("Tracking / Release Follow-up","Tracking, roadmap, meta, or multi-area planning issue detected ahead of docs/body terms.","Summarize scope, owners, dependencies, and coordination state for maintainer review.",["tracking_roadmap_architecture"]);
-if(releaseTitleLabel)return asResult("Tracking / Release Follow-up","Title or labels indicate release tracking or follow-up work.","Inspect release state, linked PRs, and remaining follow-up notes.",["release_follow_up"]);
-if(privacySignal)return asResult("Ready for Maintainer Review","Issue raises telemetry, privacy, consent, or data-collection compliance concerns.","Escalate for maintainer policy review; do not treat as an ordinary runtime bug or confirmed vulnerability.",["privacy_compliance_escalation"]);
-if(operationalArchitectureIssue||operationalBug)return asResult("Ready for Maintainer Review",browserLifecycleIssue?"Issue has strong operational, browser-lifecycle, compatibility, or reliability wording.":"Issue has strong operational, architecture, reliability, security, or data-risk wording.","Inspect impact, affected scope, and the evidence needed for maintainer judgment.",commonFacets);
-if(issueDocs)return asResult("Docs Candidate","Strong title, label, or GitHub Type signal indicates documentation-related work.","Inspect whether this is a docs gap, question, or docs-change candidate.",["docs_review",apiDocsContract&&"api_docs_contract_mismatch"].filter(Boolean));
-if(apiDocsContract)return asResult("Ready for Maintainer Review","Issue describes a mismatch between API behavior/types and documented contract.","Inspect API contract, docs wording, and compatibility impact before choosing code or docs follow-up.",["api_docs_contract_mismatch"]);
-if(validationTask)return asResult("Ready for Maintainer Review","Validation or QA task detected.","Inspect validation scope, target repository, expected evidence, and recorded results.");
-if(bugTitle)return asResult("Ready for Maintainer Review","Issue has a strong bug title or label signal that outranks broad feature or API-shape wording.","Inspect reproduction, expected behavior, actual behavior, type/API impact, and affected scope.",commonFacets);
-if(bugLabel&&missingRepro)return asResult("Needs Reproduction","Bug label signal outranks broad feature or API-shape wording, but reproduction is missing or unreliable.","Inspect what reproduction, environment, expected behavior, or actual behavior is missing.",[...commonFacets,"needs_repro_hard"]);
-if(bugLabel&&hasRepro)return asResult("Ready for Maintainer Review","Bug label signal outranks broad feature or API-shape wording.","Inspect reproduction, expected behavior, actual behavior, type/API impact, and affected scope.",[...commonFacets,labelsInclude(/needs? repro/)&&hasRunnableRepro&&"repro_present_despite_stale_label",!hasRunnableRepro&&hasInlineRepro&&"repro_inline_ok"].filter(Boolean));
-if(bugLabel)return asResult("Needs Reproduction","Bug label signal outranks broad feature or API-shape wording, but reproduction is missing or unclear.","Inspect what reproduction, environment, expected behavior, or actual behavior is missing.",[...commonFacets,"needs_repro_hard"]);
-if(authStandards)return asResult("Feature / Request","Request concerns auth standards compliance or middleware API behavior, not a confirmed vulnerability.","Inspect standards requirements, compatibility, and security-sensitive design tradeoffs.",["security_sensitive_enhancement"]);
-if(securityHardening&&!/\b(cve|advisory|vulnerability|disclosure)\b/.test(humanText))return asResult("Feature / Request","Issue proposes security, supply-chain, fuzzing, or install hardening without confirmed incident evidence.","Inspect maintenance cost and hardening value without treating it as a security vulnerability.",["security_hardening"]);
-if(feature)return asResult("Feature / Request","Strong feature request, product-design, configuration, option, language-support, or API-shape signal detected.","Inspect whether this request fits project scope and maintenance cost.",[authStandards&&"security_sensitive_enhancement"].filter(Boolean));
-if(actionableBug&&missingRepro)return asResult("Needs Reproduction","Bug-like report has actionable wording but reproduction is missing, placeholder, or unreliable.","Inspect what reproduction, isolation, environment, expected behavior, or actual behavior is missing.",[...commonFacets,"needs_repro_hard"]);
-if(actionableBug)return asResult("Ready for Maintainer Review","Issue has strong actionable bug, operational, environment, architecture, reliability, or data-risk wording.","Inspect impact, affected scope, reproduction, and evidence needed for maintainer judgment.",[...commonFacets,labelsInclude(/needs? repro/)&&hasRunnableRepro&&"repro_present_despite_stale_label",!hasRunnableRepro&&hasInlineRepro&&"repro_inline_ok"].filter(Boolean));
-if(bug&&missingRepro)return asResult("Needs Reproduction","Bug-like report says reproduction is missing or unreliable.",stale?"Inspect missing reproduction details and also check whether the age/relevance still justifies follow-up.":"Inspect what reproduction, environment, expected behavior, or actual behavior is missing.",[...commonFacets,"needs_repro_hard"]);
-if(bug&&hasRepro)return asResult("Ready for Maintainer Review","Issue appears to include bug-like wording and reproduction or actionability details.","Inspect reproduction, expected behavior, actual behavior, and affected scope.",[...commonFacets,labelsInclude(/needs? repro/)&&hasRunnableRepro&&"repro_present_despite_stale_label",!hasRunnableRepro&&hasInlineRepro&&"repro_inline_ok"].filter(Boolean));
-if(bug)return asResult("Needs Reproduction","Bug-like report without clear reproduction details.",stale?"Inspect missing reproduction details and also check whether the age/relevance still justifies follow-up.":"Inspect what reproduction, environment, expected behavior, or actual behavior is missing.",[...commonFacets,"needs_repro_hard"]);
-if(stale)return asResult("Stale Candidate","No recent activity for 30+ days.","Inspect whether the item is still relevant before any further action.");
-return asResult("Unclassified","Imported from public GitHub and no strong rule matched.","Inspect manually and assign a category.");
-}
-
-function normalizeGithubItem(item){const isPR=!!item.pull_request;return{number:item.number,title:item.title||"(untitled)",type:isPR?"pr":"issue",labels:labelsOf(item.labels),author:item.user?.login||"unknown",updatedAt:item.updated_at||new Date().toISOString(),body:item.body||"",comments:[],draft:/^\s*draft\b|^\s*draft:/i.test(item.title||""),htmlUrl:item.html_url||""}}
-function importErrorMessage(response,detail=""){const status=Number(response?.status)||0,lower=String(detail||"").toLowerCase(),remaining=response?.headers?.get?.("x-ratelimit-remaining");if(status===404)return IMPORT_MESSAGES.notFound;if(status===403){if(remaining==="0"||lower.includes("rate limit")||lower.includes("api rate limit exceeded"))return "GitHub public API rate limit reached. Wait and try again later, or use a smaller test repository.";return IMPORT_MESSAGES.rateLimit}return `GitHub public API request failed (${status||"unknown status"}). Wait and try again later.`}
-async function fetchPage(url){let response;try{response=await fetch(url,{headers:{"Accept":"application/vnd.github+json"}})}catch(error){throw new Error(IMPORT_MESSAGES.network)}if(!response.ok){const detail=await response.text().catch(()=>"");throw new Error(importErrorMessage(response,detail))}return response.json()}
-async function fetchPublicItems(){let full;try{({full}=parseRepo($("repoInput").value))}catch(error){setStatus(error.message,"error");return}const limit=Math.min(Number($("limitInput").value)||50,100);setStatus(`Fetching issues and pull requests for ${full}…`,"loading");$("fetchButton").disabled=true;$("saveButton").disabled=true;try{const url=`https://api.github.com/repos/${encodeURIComponent(full).replace("%2F","/")}/issues?state=open&per_page=${limit}&sort=updated&direction=desc`;setStatus(`Fetching up to ${limit} open issues and pull requests for ${full}…`,"loading");const raw=await fetchPage(url);setStatus("Building board preview…","loading");const nextItems=raw.map(normalizeGithubItem).map(classifyImportedItem);importedItems=nextItems;importedRepoFull=full;$("previewOutput").value=JSON.stringify(importedItems,null,2);const issues=importedItems.filter(item=>item.type==="issue").length,prs=importedItems.filter(item=>item.type==="pr").length;if(importedItems.length===0){setStatus(IMPORT_MESSAGES.empty,"warning")}else{setStatus(`Imported ${issues} issues and ${prs} pull requests from ${full}. Review the classified preview, then save to board.`,"success")}$("saveButton").disabled=importedItems.length===0}catch(error){setStatus(error.message,"error");$("saveButton").disabled=importedItems.length===0}finally{$("fetchButton").disabled=false}}
-function saveToBoard(){if(!importedItems.length){setStatus("No imported items to save.","error");return}const full=importedRepoFull||parseRepo($("repoInput").value).full;const state={repoName:full,maintainerNote:`Imported from public GitHub repository ${full}.`,items:importedItems};localStorage.setItem(STORE_KEY,JSON.stringify(state));setStatus(`Saved ${importedItems.length} classified items to Maintainer Flowboard local data. Open board.html to review classifications.`,"success")}
-function importExampleRepo(repo){$("repoInput").value=repo;fetchPublicItems()}
-function bindExampleImports(){document.querySelectorAll("[data-example-repo]").forEach(button=>{button.onclick=()=>importExampleRepo(button.dataset.exampleRepo)})}
-function prefillFromQuery(){const repo=new URLSearchParams(location.search).get("repo");if(!repo)return;$("repoInput").value=repo;setStatus(`Selected ${repo} from the repository selector. Press Fetch public items to preview before saving.`,"success")}
-$("fetchButton").onclick=fetchPublicItems;
-$("saveButton").onclick=saveToBoard;
-$("repoInput").addEventListener("keydown",event=>{if(event.key==="Enter")fetchPublicItems()});
-bindExampleImports();
-prefillFromQuery();
-</script>
 </body>
 </html>
