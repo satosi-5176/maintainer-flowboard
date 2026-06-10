@@ -28,7 +28,7 @@ function loadClassifier(file, name) {
 }
 
 const classify = loadClassifier('index.html', 'classifyItem');
-const classifyImported = loadClassifier('public-import.html', 'classifyImportedItem');
+const classifyImported = classify;
 
 function loadBoardAttention() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
@@ -93,7 +93,7 @@ function matchesFocus(filter, itemUnderTest, localReview) {
 
 
 function loadPublicImportHelpers() {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'public-import.html'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
   const messages = source.match(/const IMPORT_MESSAGES=\{[^;]+\};/)?.[0];
   if (!messages) throw new Error('Could not extract public import messages');
   const context = { fetch: async () => { throw new TypeError('network unavailable'); } };
@@ -293,7 +293,7 @@ test('public GitHub import maps 403 rate limits to retry guidance without token 
 
 test('public GitHub import maps network failure and empty results to friendly messages', async () => {
   await assert.rejects(() => publicImport.fetchPage('https://api.github.com/repos/example/repo/issues'), /Network error while importing public GitHub data\. Check your connection and try again\./);
-  const source = fs.readFileSync(path.join(__dirname, '..', 'public-import.html'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
   assert.ok(source.includes('Import succeeded, but no open issues or pull requests were found.'));
   assert.ok(source.includes('aria-live="polite"'));
 });
@@ -621,8 +621,8 @@ test('public importer classifier stays aligned with repository selector classifi
   }
 });
 
-test('public import example quick buttons expose supported public repositories', () => {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'public-import.html'), 'utf8');
+test('main board public import controls expose supported public repositories', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
   const expectedRepos = ['TanStack/query', 'tldraw/tldraw', 'vitejs/vite', 'eslint/eslint'];
   const exampleRepoMatches = [...source.matchAll(/data-example-repo="([^"]+)"/g)].map((match) => match[1]);
 
@@ -631,18 +631,32 @@ test('public import example quick buttons expose supported public repositories',
     assert.match(source, new RegExp(`aria-label="Import example repository ${repo}"`));
   }
   assert.match(source, /Try an example:/);
+  assert.ok(source.includes('id="publicImportPanel"'));
+  assert.ok(source.includes('id="publicRepoInput"'));
+  assert.ok(source.includes('id="publicLimitInput"'));
+  assert.ok(source.includes('id="publicImportButton"'));
+  assert.doesNotMatch(source, /href="\.\/public-import\.html"/);
 });
 
-test('public import example quick button helper reuses normal fetch flow', () => {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'public-import.html'), 'utf8');
+test('main board public import example quick button helper reuses normal import flow', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
   const helper = extractFunction(source, 'importExampleRepo');
   const binder = extractFunction(source, 'bindExampleImports');
 
-  assert.match(helper, /\$\("repoInput"\)\.value=repo/);
+  assert.match(helper, /\$\("publicRepoInput"\)\.value=repo/);
   assert.match(helper, /fetchPublicItems\(\)/);
   assert.doesNotMatch(helper, /fetchPage|fetch\(/);
   assert.match(binder, /\[data-example-repo\]/);
   assert.match(binder, /importExampleRepo\(button\.dataset\.exampleRepo\)/);
+});
+
+
+
+test('public import compatibility page points back to main board without old workflow', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'public-import.html'), 'utf8');
+  assert.match(source, /Public GitHub import now lives on the main board/);
+  assert.match(source, /\.\/board\.html#publicImportPanel/);
+  assert.doesNotMatch(source, /id="fetchButton"|id="saveButton"|previewOutput|Fetched JSON preview/);
 });
 
 function loadBoardColumnLayoutHelpers() {
