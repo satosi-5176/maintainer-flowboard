@@ -41,6 +41,56 @@ function loadBoardAttention() {
 
 const secondarySignals = loadBoardAttention();
 
+function loadBoardFocusHelpers() {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
+  const focusFilters = source.match(/const FOCUS_FILTERS=\[[^;]+\]/)?.[0];
+  if (!focusFilters) throw new Error('Could not extract focus filter metadata');
+  const names = ['normalizeReviewStatus', 'itemReviewKey', 'localReviewFor', 'normalizeFocusFilter', 'loadFocusFilter', 'boardItemMatchesFocusFilter'];
+  const context = {
+    Date,
+    localStorage: {
+      current: null,
+      getItem(key) { return key === 'maintainerFlowboardFocusFilterV1' ? this.current : null; },
+    },
+  };
+  vm.createContext(context);
+  vm.runInContext(`
+const state = {repoName:'TanStack/query'};
+let reviewNotes = {};
+const FOCUS_FILTER_KEY = 'maintainerFlowboardFocusFilterV1';
+${focusFilters}
+const $ = () => ({value:'TanStack/query'});
+function secondarySignals(item){return item.signals || [];}
+${names.map((name) => extractFunction(source, name)).join('\n')}
+this.setReviewNotes = (notes) => { reviewNotes = notes; };
+this.setStoredFocusFilter = (filter) => { localStorage.current = filter; };
+this.boardItemMatchesFocusFilter = boardItemMatchesFocusFilter;
+this.loadFocusFilter = loadFocusFilter;
+`, context);
+  return context;
+}
+
+const boardFocus = loadBoardFocusHelpers();
+
+function focusItem(overrides) {
+  return {
+    number: overrides.number || 1,
+    type: overrides.type || 'issue',
+    title: overrides.title || 'Example',
+    signals: overrides.signals || [],
+    ...overrides,
+  };
+}
+
+function focusReviewKey(itemUnderTest) {
+  return `TanStack/query::${itemUnderTest.type === 'pr' ? 'pr' : 'issue'}::${itemUnderTest.number}`;
+}
+
+function matchesFocus(filter, itemUnderTest, localReview) {
+  boardFocus.setReviewNotes(localReview ? { [focusReviewKey(itemUnderTest)]: localReview } : {});
+  return boardFocus.boardItemMatchesFocusFilter(filter, itemUnderTest);
+}
+
 
 function loadPublicImportHelpers() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'public-import.html'), 'utf8');
@@ -613,4 +663,31 @@ test('empty board columns use compact empty layout helpers', () => {
   assert.equal(emptyColumnState(), '<p class="empty-state">No items in this section.</p>');
   assert.match(source, /\.column\.empty,\.column\.collapsed\{min-height:auto\}/);
   assert.match(source, /\.empty-state\{margin:0;padding:2px 6px;/);
+});
+
+
+test('board focus filters match attention signals and local review status', () => {
+  const attentionItem = focusItem({ number: 10, signals: ['Security / data exposure check'] });
+  const plainItem = focusItem({ number: 11 });
+  const reviewedItem = focusItem({ number: 12, type: 'pr' });
+  const revisitItem = focusItem({ number: 13 });
+  const wrongItem = focusItem({ number: 14 });
+
+  assert.equal(matchesFocus('all', plainItem), true);
+  assert.equal(matchesFocus('attention', attentionItem), true);
+  assert.equal(matchesFocus('attention', plainItem), false);
+  assert.equal(matchesFocus('unreviewed', plainItem), true);
+  assert.equal(matchesFocus('unreviewed', reviewedItem, { status: 'reviewed', note: '', updatedAt: '2026-06-01T00:00:00Z' }), false);
+  assert.equal(matchesFocus('reviewed', reviewedItem, { status: 'reviewed', note: '', updatedAt: '2026-06-01T00:00:00Z' }), true);
+  assert.equal(matchesFocus('revisit', revisitItem, { status: 'revisit', note: '', updatedAt: '2026-06-01T00:00:00Z' }), true);
+  assert.equal(matchesFocus('classification_wrong', wrongItem, { status: 'classification_wrong', note: '', updatedAt: '2026-06-01T00:00:00Z' }), true);
+});
+
+test('board focus filter persistence falls back to all for invalid stored values', () => {
+  boardFocus.setStoredFocusFilter('reviewed');
+  assert.equal(boardFocus.loadFocusFilter(), 'reviewed');
+  boardFocus.setStoredFocusFilter('not-a-filter');
+  assert.equal(boardFocus.loadFocusFilter(), 'all');
+  boardFocus.setStoredFocusFilter(null);
+  assert.equal(boardFocus.loadFocusFilter(), 'all');
 });
