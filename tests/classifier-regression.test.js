@@ -571,6 +571,30 @@ test('public importer classifier stays aligned with repository selector classifi
   }
 });
 
+test('public import example quick buttons expose supported public repositories', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'public-import.html'), 'utf8');
+  const expectedRepos = ['TanStack/query', 'tldraw/tldraw', 'vitejs/vite', 'eslint/eslint'];
+  const exampleRepoMatches = [...source.matchAll(/data-example-repo="([^"]+)"/g)].map((match) => match[1]);
+
+  assert.deepEqual(exampleRepoMatches, expectedRepos);
+  for (const repo of expectedRepos) {
+    assert.match(source, new RegExp(`aria-label="Import example repository ${repo}"`));
+  }
+  assert.match(source, /Try an example:/);
+});
+
+test('public import example quick button helper reuses normal fetch flow', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'public-import.html'), 'utf8');
+  const helper = extractFunction(source, 'importExampleRepo');
+  const binder = extractFunction(source, 'bindExampleImports');
+
+  assert.match(helper, /\$\("repoInput"\)\.value=repo/);
+  assert.match(helper, /fetchPublicItems\(\)/);
+  assert.doesNotMatch(helper, /fetchPage|fetch\(/);
+  assert.match(binder, /\[data-example-repo\]/);
+  assert.match(binder, /importExampleRepo\(button\.dataset\.exampleRepo\)/);
+});
+
 function loadBoardColumnLayoutHelpers() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
   const context = { fetch: async () => { throw new TypeError('network unavailable'); } };
