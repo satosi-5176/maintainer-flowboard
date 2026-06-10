@@ -103,6 +103,7 @@ If you are running the app locally and sample data is available in your checkout
 
 ## Documentation
 
+- [Contributing](CONTRIBUTING.md)
 - [Project handoff](HANDOFF.md)
 - [Project philosophy](PROJECT_PHILOSOPHY.md)
 - [Spec](SPEC.md)
