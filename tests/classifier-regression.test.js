@@ -45,7 +45,7 @@ function loadBoardFocusHelpers() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
   const focusFilters = source.match(/const FOCUS_FILTERS=\[[^;]+\]/)?.[0];
   if (!focusFilters) throw new Error('Could not extract focus filter metadata');
-  const names = ['normalizeReviewStatus', 'itemReviewKey', 'localReviewFor', 'normalizeFocusFilter', 'loadFocusFilter', 'boardItemMatchesFocusFilter'];
+  const names = ['normalizeReviewStatus', 'itemReviewKey', 'localReviewFor', 'normalizeFocusFilter', 'loadFocusFilter', 'boardItemMatchesFocusFilter', 'focusFilterCounts', 'boardSnapshotCounts'];
   const context = {
     Date,
     localStorage: {
@@ -65,6 +65,8 @@ ${names.map((name) => extractFunction(source, name)).join('\n')}
 this.setReviewNotes = (notes) => { reviewNotes = notes; };
 this.setStoredFocusFilter = (filter) => { localStorage.current = filter; };
 this.boardItemMatchesFocusFilter = boardItemMatchesFocusFilter;
+this.focusFilterCounts = focusFilterCounts;
+this.boardSnapshotCounts = boardSnapshotCounts;
 this.loadFocusFilter = loadFocusFilter;
 `, context);
   return context;
@@ -695,6 +697,28 @@ test('board focus filters match attention signals and local review status', () =
   assert.equal(matchesFocus('reviewed', reviewedItem, { status: 'reviewed', note: '', updatedAt: '2026-06-01T00:00:00Z' }), true);
   assert.equal(matchesFocus('revisit', revisitItem, { status: 'revisit', note: '', updatedAt: '2026-06-01T00:00:00Z' }), true);
   assert.equal(matchesFocus('classification_wrong', wrongItem, { status: 'classification_wrong', note: '', updatedAt: '2026-06-01T00:00:00Z' }), true);
+});
+
+test('board snapshot attention count matches Attention focus count', () => {
+  const attentionIssue = focusItem({ number: 20, type: 'issue', signals: ['CSP / nonce hardening check'] });
+  const attentionPr = focusItem({ number: 21, type: 'pr', signals: ['Release/docs overlap'] });
+  const plainIssue = focusItem({ number: 22, type: 'issue', column: 'Ready for Maintainer Review' });
+  const locallyReviewedPr = focusItem({ number: 23, type: 'pr', column: 'Ready for Maintainer Review' });
+  const items = [attentionIssue, attentionPr, plainIssue, locallyReviewedPr];
+
+  boardFocus.setReviewNotes({
+    [focusReviewKey(locallyReviewedPr)]: { status: 'reviewed', note: 'Checked locally', updatedAt: '2026-06-01T00:00:00Z' },
+  });
+
+  const focusCounts = boardFocus.focusFilterCounts(items);
+  const snapshot = boardFocus.boardSnapshotCounts(items);
+
+  assert.equal(focusCounts.attention, 2);
+  assert.equal(snapshot.total, 4);
+  assert.equal(snapshot.issues, 2);
+  assert.equal(snapshot.prs, 2);
+  assert.equal(snapshot.attention, 2);
+  assert.equal(snapshot.attention, focusCounts.attention);
 });
 
 test('board focus filter persistence falls back to all for invalid stored values', () => {
