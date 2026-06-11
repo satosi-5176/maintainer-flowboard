@@ -45,7 +45,7 @@ function loadBoardFocusHelpers() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
   const focusFilters = source.match(/const FOCUS_FILTERS=\[[^;]+\]/)?.[0];
   if (!focusFilters) throw new Error('Could not extract focus filter metadata');
-  const names = ['saveReviewNotes', 'normalizeReviewStatus', 'itemReviewKey', 'localReviewFor', 'normalizeFocusFilter', 'loadFocusFilter', 'boardItemMatchesFocusFilter', 'visibleItemsForFocus', 'bulkLocalReviewCandidates', 'setLocalReviewStatus', 'applyBulkLocalReview', 'focusFilterCounts', 'boardSnapshotCounts'];
+  const names = ['saveReviewNotes', 'normalizeReviewStatus', 'itemReviewKey', 'itemExpansionKey', 'setCardExpanded', 'toggleCardExpanded', 'localReviewFor', 'normalizeFocusFilter', 'loadFocusFilter', 'boardItemMatchesFocusFilter', 'visibleItemsForFocus', 'bulkLocalReviewCandidates', 'setLocalReviewStatus', 'applyBulkLocalReview', 'focusFilterCounts', 'boardSnapshotCounts'];
   const context = {
     Date,
     localStorage: {
@@ -59,6 +59,7 @@ function loadBoardFocusHelpers() {
   vm.runInContext(`
 const state = {repoName:'TanStack/query'};
 let reviewNotes = {};
+const expandedCards = {};
 const FOCUS_FILTER_KEY = 'maintainerFlowboardFocusFilterV1';
 const REVIEW_NOTES_KEY = 'maintainerFlowboardReviewNotesV1';
 ${focusFilters}
@@ -67,7 +68,11 @@ function secondarySignals(item){return item.signals || [];}
 ${names.map((name) => extractFunction(source, name)).join('\n')}
 this.setReviewNotes = (notes) => { reviewNotes = notes; };
 this.getReviewNotes = () => reviewNotes;
+this.getExpandedCards = () => expandedCards;
 this.setStoredFocusFilter = (filter) => { localStorage.current = filter; };
+this.itemExpansionKey = itemExpansionKey;
+this.setCardExpanded = setCardExpanded;
+this.toggleCardExpanded = toggleCardExpanded;
 this.boardItemMatchesFocusFilter = boardItemMatchesFocusFilter;
 this.visibleItemsForFocus = visibleItemsForFocus;
 this.bulkLocalReviewCandidates = bulkLocalReviewCandidates;
@@ -100,6 +105,45 @@ function matchesFocus(filter, itemUnderTest, localReview) {
   return boardFocus.boardItemMatchesFocusFilter(filter, itemUnderTest);
 }
 
+
+
+test('card expansion uses stable per-item keys independent of local review notes', () => {
+  const issue = focusItem({ number: 10820, type: 'issue' });
+  const pr = focusItem({ number: 10893, type: 'pr' });
+  const sameNumberIssue = focusItem({ number: 10893, type: 'issue' });
+
+  assert.equal(boardFocus.itemExpansionKey(pr), 'TanStack/query::pr::10893');
+  assert.equal(boardFocus.itemExpansionKey(issue), 'TanStack/query::issue::10820');
+  assert.equal(boardFocus.itemExpansionKey(sameNumberIssue), 'TanStack/query::issue::10893');
+  assert.notEqual(boardFocus.itemExpansionKey(pr), boardFocus.itemExpansionKey(sameNumberIssue));
+
+  boardFocus.setReviewNotes({
+    [focusReviewKey(issue)]: { status: 'reviewed', note: 'Reviewed locally.', updatedAt: '2026-06-01T00:00:00Z' },
+  });
+  boardFocus.setCardExpanded(pr, true);
+
+  const expanded = boardFocus.getExpandedCards();
+  assert.equal(expanded[boardFocus.itemExpansionKey(pr)], true);
+  assert.equal(expanded[boardFocus.itemExpansionKey(issue)], undefined);
+  assert.equal(boardFocus.getReviewNotes()[focusReviewKey(issue)].status, 'reviewed');
+});
+
+test('toggling one card expansion preserves other cards and focus counts', () => {
+  const first = focusItem({ number: 301, type: 'issue', signals: ['Security / data exposure check'] });
+  const second = focusItem({ number: 302, type: 'pr' });
+  const beforeCounts = boardFocus.focusFilterCounts([first, second]);
+
+  boardFocus.setCardExpanded(first, false);
+  boardFocus.setCardExpanded(second, false);
+  assert.equal(boardFocus.toggleCardExpanded(first), true);
+  assert.equal(boardFocus.getExpandedCards()[boardFocus.itemExpansionKey(first)], true);
+  assert.equal(boardFocus.getExpandedCards()[boardFocus.itemExpansionKey(second)], undefined);
+
+  assert.equal(boardFocus.toggleCardExpanded(first), false);
+  assert.equal(boardFocus.getExpandedCards()[boardFocus.itemExpansionKey(first)], undefined);
+  assert.equal(boardFocus.getExpandedCards()[boardFocus.itemExpansionKey(second)], undefined);
+  assert.deepEqual(boardFocus.focusFilterCounts([first, second]), beforeCounts);
+});
 
 test('bulk local reviewed only applies to active focus-filter items and preserves stronger statuses', () => {
   const attention = focusItem({ number: 201, signals: ['Attention'] });
