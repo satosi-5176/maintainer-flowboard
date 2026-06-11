@@ -45,12 +45,14 @@ function loadBoardFocusHelpers() {
   const source = fs.readFileSync(path.join(__dirname, '..', 'board.html'), 'utf8');
   const focusFilters = source.match(/const FOCUS_FILTERS=\[[^;]+\]/)?.[0];
   if (!focusFilters) throw new Error('Could not extract focus filter metadata');
-  const names = ['normalizeReviewStatus', 'itemReviewKey', 'localReviewFor', 'normalizeFocusFilter', 'loadFocusFilter', 'boardItemMatchesFocusFilter', 'focusFilterCounts', 'boardSnapshotCounts'];
+  const names = ['saveReviewNotes', 'normalizeReviewStatus', 'itemReviewKey', 'localReviewFor', 'normalizeFocusFilter', 'loadFocusFilter', 'boardItemMatchesFocusFilter', 'visibleItemsForFocus', 'bulkLocalReviewCandidates', 'setLocalReviewStatus', 'applyBulkLocalReview', 'focusFilterCounts', 'boardSnapshotCounts'];
   const context = {
     Date,
     localStorage: {
       current: null,
+      saved: null,
       getItem(key) { return key === 'maintainerFlowboardFocusFilterV1' ? this.current : null; },
+      setItem(key, value) { this.saved = { key, value }; },
     },
   };
   vm.createContext(context);
@@ -58,13 +60,18 @@ function loadBoardFocusHelpers() {
 const state = {repoName:'TanStack/query'};
 let reviewNotes = {};
 const FOCUS_FILTER_KEY = 'maintainerFlowboardFocusFilterV1';
+const REVIEW_NOTES_KEY = 'maintainerFlowboardReviewNotesV1';
 ${focusFilters}
 const $ = () => ({value:'TanStack/query'});
 function secondarySignals(item){return item.signals || [];}
 ${names.map((name) => extractFunction(source, name)).join('\n')}
 this.setReviewNotes = (notes) => { reviewNotes = notes; };
+this.getReviewNotes = () => reviewNotes;
 this.setStoredFocusFilter = (filter) => { localStorage.current = filter; };
 this.boardItemMatchesFocusFilter = boardItemMatchesFocusFilter;
+this.visibleItemsForFocus = visibleItemsForFocus;
+this.bulkLocalReviewCandidates = bulkLocalReviewCandidates;
+this.applyBulkLocalReview = applyBulkLocalReview;
 this.focusFilterCounts = focusFilterCounts;
 this.boardSnapshotCounts = boardSnapshotCounts;
 this.loadFocusFilter = loadFocusFilter;
@@ -92,6 +99,49 @@ function matchesFocus(filter, itemUnderTest, localReview) {
   boardFocus.setReviewNotes(localReview ? { [focusReviewKey(itemUnderTest)]: localReview } : {});
   return boardFocus.boardItemMatchesFocusFilter(filter, itemUnderTest);
 }
+
+
+test('bulk local reviewed only applies to active focus-filter items and preserves stronger statuses', () => {
+  const attention = focusItem({ number: 201, signals: ['Attention'] });
+  const hidden = focusItem({ number: 202, signals: [] });
+  const revisit = focusItem({ number: 203, signals: ['Attention'] });
+  const classificationWrong = focusItem({ number: 204, signals: ['Attention'] });
+  boardFocus.setReviewNotes({
+    [focusReviewKey(revisit)]: { status: 'revisit', note: 'Keep the revisit signal.', updatedAt: '2026-06-01T00:00:00Z' },
+    [focusReviewKey(classificationWrong)]: { status: 'classification_wrong', note: 'Classifier needs review.', updatedAt: '2026-06-01T00:00:00Z' },
+  });
+
+  const changed = boardFocus.applyBulkLocalReview('reviewed', [attention, hidden, revisit, classificationWrong], 'attention', '2026-06-11T00:00:00Z');
+  const notes = boardFocus.getReviewNotes();
+
+  assert.equal(changed, 1);
+  assert.equal(notes[focusReviewKey(attention)].status, 'reviewed');
+  assert.equal(notes[focusReviewKey(hidden)], undefined);
+  assert.equal(notes[focusReviewKey(revisit)].status, 'revisit');
+  assert.equal(notes[focusReviewKey(revisit)].note, 'Keep the revisit signal.');
+  assert.equal(notes[focusReviewKey(classificationWrong)].status, 'classification_wrong');
+});
+
+test('bulk local revisit and clear preserve note text while filter counts update', () => {
+  const first = focusItem({ number: 211 });
+  const second = focusItem({ number: 212 });
+  boardFocus.setReviewNotes({
+    [focusReviewKey(first)]: { status: 'unreviewed', note: 'Check linked release issue before next packet.', updatedAt: '2026-06-01T00:00:00Z' },
+    [focusReviewKey(second)]: { status: 'reviewed', note: '', updatedAt: '2026-06-01T00:00:00Z' },
+  });
+
+  assert.equal(boardFocus.applyBulkLocalReview('revisit', [first, second], 'all', '2026-06-11T00:00:00Z'), 2);
+  let notes = boardFocus.getReviewNotes();
+  assert.equal(notes[focusReviewKey(first)].status, 'revisit');
+  assert.equal(notes[focusReviewKey(first)].note, 'Check linked release issue before next packet.');
+
+  assert.equal(boardFocus.applyBulkLocalReview('clear', [first, second], 'all', '2026-06-11T00:01:00Z'), 2);
+  notes = boardFocus.getReviewNotes();
+  assert.equal(notes[focusReviewKey(first)].status, 'unreviewed');
+  assert.equal(notes[focusReviewKey(first)].note, 'Check linked release issue before next packet.');
+  assert.equal(notes[focusReviewKey(second)], undefined);
+  assert.deepEqual(Object.entries(boardFocus.focusFilterCounts([first, second])), Object.entries({ all: 2, attention: 0, unreviewed: 2, reviewed: 0, revisit: 0, classification_wrong: 0 }));
+});
 
 
 function loadPublicImportHelpers() {
@@ -306,7 +356,7 @@ test('action packet clarifies classification confidence wording without bare con
   assert.ok(source.includes('["unreviewed","reviewed","revisit","classification_wrong"]'));
   assert.match(source, /Classification confidence: \$/);
   assert.ok(source.includes('Classification confidence describes how strongly the item matched this review bucket. It is not a merge, close, release, or priority recommendation.'));
-  assert.ok(source.includes('Routine high-confidence ready PRs may be shown in a compact form. Items with medium/low confidence, cautions, attention flags, or local review notes remain expanded.'));
+  assert.ok(source.includes('Routine high-confidence ready PRs may be shown in a compact form. Items with medium/low confidence, cautions, attention flags, local note text, revisit status, or classification-wrong status remain expanded.'));
   assert.ok(source.includes('Local review notes are stored in this browser only and are not GitHub actions.'));
   assert.doesNotMatch(source, /- Confidence:/);
 });
@@ -327,13 +377,25 @@ test('action packet includes local review status without changing classification
   const output = renderPacketGroupFor(itemUnderTest, { status: 'reviewed', note: '', updatedAt: '2026-06-07T00:00:00Z' });
 
   assert.match(output, /- PR #129: Review noted PR/);
-  assert.match(output, /Current column: Ready for Maintainer Review/);
-  assert.match(output, /Classification confidence: High/);
-  assert.match(output, /Local review status: Reviewed/);
+  assert.match(output, /Ready review candidate · High classification confidence · Locally reviewed/);
+  assert.match(output, /Check: scope, tests, CI, linked issue, and risk\./);
+  assert.doesNotMatch(output, /Current column:/);
+  assert.doesNotMatch(output, /Local review status: Reviewed/);
   assert.doesNotMatch(output, /Local note:/);
-  assert.doesNotMatch(output, /Ready review candidate · High classification confidence/);
   assert.equal(itemUnderTest.column, 'Ready for Maintainer Review');
   assert.equal(itemUnderTest.confidence, 'high');
+});
+
+test('action packet keeps classification-wrong review status expanded', () => {
+  const output = renderPacketGroupFor(packetItem({ number: 131, title: 'Routine PR with wrong classification' }), {
+    status: 'classification_wrong',
+    note: '',
+    updatedAt: '2026-06-07T00:00:00Z',
+  });
+
+  assert.match(output, /Current column: Ready for Maintainer Review/);
+  assert.match(output, /Local review status: Classification wrong/);
+  assert.doesNotMatch(output, /Ready review candidate · High classification confidence/);
 });
 
 test('action packet includes local review note and keeps compact routine PR expanded', () => {
